@@ -23,6 +23,8 @@ var ppSubnetAddressRangePrimary = '10.0.0.0/24'
 @description('The address range for the "pp" subnet.')
 var ppSubnetAddressRangeSecondary = '10.1.0.0/24'
 
+var resourceToken = toLower(uniqueString(subscription().id, baseName, primaryLocation))
+
 var locations = [
   { 
     location: primaryLocation
@@ -156,7 +158,7 @@ resource enterprisePolicy 'Microsoft.PowerPlatform/enterprisePolicies@2020-10-30
   ]
 }
 
-module blob 'blob.bicep' = {
+module blob 'storage.bicep' = {
   name: 'blob'
   params: {
     baseName: baseName
@@ -169,5 +171,31 @@ module blob 'blob.bicep' = {
     vnets[1]
   ]
 }
+
+module containerApp1 'containerapp.bicep' = {
+  name: 'containerApp'
+  params: {
+    baseName: baseName
+    location: vnets[0].location
+    primaryVnetName: vnets[0].name
+    secondaryVnetName: vnets[1].name
+  }
+  dependsOn: [
+    vnets[0]
+    vnets[1]
+  ]
+}
+
+// module containerApp1 'containerapp.bicep' = {
+//   name: 'containerApp'
+//   params: {
+//     baseName: baseName
+//     location: primaryLocation
+//     primaryVnetName: '${baseName}-${primaryLocation}'
+//     secondaryVnetName: '${baseName}-${secondaryLocation}'
+//   }
+// }
+
+output containerAppFQDN string = containerApp1.outputs.containerAppFQDN
 
 
