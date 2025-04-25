@@ -1,0 +1,29 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "hostName": {
+        "type": "string",
+        "uiDefinition": {
+          "constraints": {
+            "required": "true"
+          },
+          "description": "Host name for the API (Example: test.com)",
+          "displayName": "Host name",
+          "tooltip": "Provide a host name"
+        }
+      }
+    },
+    "iconBrandColor": "#007ee5",
+    "capabilities": [],
+    "policyTemplateInstances": [
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set Host",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('hostName')"
+        }
+      }
+    ],
+    "publisher": "David Watson"
+  }
+}

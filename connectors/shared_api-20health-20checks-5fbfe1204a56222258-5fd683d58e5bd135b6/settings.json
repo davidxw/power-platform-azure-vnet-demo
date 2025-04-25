@@ -1,0 +1,9 @@
+{
+  "connectorId": "shared_api-20health-20checks-5fbfe1204a56222258-5fd683d58e5bd135b6",
+  "environment": "Default-cf7a4a08-6d30-40c8-bd52-d6f7494c0541",
+  "apiProperties": "apiProperties.json",
+  "apiDefinition": "apiDefinition.swagger.json",
+  "icon": "icon.png",
+  "powerAppsUrl": "https://api.powerapps.com",
+  "powerAppsApiVersion": "2016-11-01"
+}

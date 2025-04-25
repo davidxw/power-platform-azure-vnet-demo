@@ -172,7 +172,7 @@ module blob 'storage.bicep' = {
   ]
 }
 
-module containerApp1 'containerapp.bicep' = {
+module containerApp 'containerapps.bicep' = {
   name: 'containerApp'
   params: {
     baseName: baseName
@@ -186,16 +186,8 @@ module containerApp1 'containerapp.bicep' = {
   ]
 }
 
-// module containerApp1 'containerapp.bicep' = {
-//   name: 'containerApp'
-//   params: {
-//     baseName: baseName
-//     location: primaryLocation
-//     primaryVnetName: '${baseName}-${primaryLocation}'
-//     secondaryVnetName: '${baseName}-${secondaryLocation}'
-//   }
-// }
-
-output containerAppFQDN string = containerApp1.outputs.containerAppFQDN
-
+output policyArmId string = enterprisePolicy.id
+output containerAppNoauthFQDN string = containerApp.outputs.containerNoauthAppFQDN
+output containerAppauthFQDN string = containerApp.outputs.containerAppAuthFQDN
+output containerAppAuthAppId string = containerApp.outputs.containerAppAuthAppId
 

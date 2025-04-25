@@ -11,12 +11,12 @@ param primaryVnetName string = 'pp-vnet'
 param secondaryVnetName string = 'pp-vnet-secondary'
 
 @description('The name of the container app.')
-param containerAppName string = '${baseName}-containerapp1'
+param containerAppName string = '${baseName}-ca'
 
 @description('The image to use for the container app.')
 param containerImage string = 'davidxw/webtest:latest'
 
-var containerAppSubnetName = 'containerapp1-subnet'
+var containerAppSubnetName = 'containerapp-subnet'
 var privateEndpointSubnetAddressRange = '10.0.2.0/24'
 
 resource primaryVnet 'Microsoft.Network/virtualNetworks@2021-05-01' existing = {
@@ -74,8 +74,8 @@ resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' 
   }
 }
 
-resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
-  name: containerAppName
+resource containerApp_noauth 'Microsoft.App/containerApps@2023-05-01' = {
+  name: '${containerAppName}-noauth'
   location: location
   properties: {
     managedEnvironmentId: containerAppEnvironment.id
@@ -104,6 +104,51 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
   }
 }
 
+resource containerApp_auth 'Microsoft.App/containerApps@2023-05-01' = {
+  name: '${containerAppName}-auth'
+  location: location
+  properties: {
+    managedEnvironmentId: containerAppEnvironment.id
+    workloadProfileName: 'Consumption'
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 8080
+      }
+    }
+    template: {
+      containers: [
+        {
+          name: containerAppName
+          image: containerImage
+          resources: {
+            cpu: 1
+            memory: '2Gi'
+          }
+        }
+      ]
+    }
+  }
+  identity: {
+    type: 'SystemAssigned'
+  }
+}
+
+resource containerApp_auth_config 'Microsoft.App/containerApps/authConfigs@2025-01-01' = {
+  parent: containerApp_auth
+  name: 'authConfig'
+  properties: {
+    identityProviders: {
+      azureActiveDirectory: {
+        enabled: true
+        automatedProvisioning: true
+      }
+    }
+    tokenStoreEnabled: true
+    defaultProvider: 'AzureActiveDirectory'
+  }
+}
+
 module privateDnsZoneModule 'privatedns.bicep' = {
   name: 'privateDnsZoneModule'
   params: {
@@ -116,7 +161,9 @@ module privateDnsZoneModule 'privatedns.bicep' = {
   }
 }
 
-output containerAppFQDN string = containerApp.properties.configuration.ingress.fqdn
+output containerNoauthAppFQDN string = containerApp_noauth.properties.configuration.ingress.fqdn
+output containerAppAuthFQDN string = containerApp_auth.properties.configuration.ingress.fqdn
+output containerAppAuthAppId string = containerApp_auth_config.properties.identityProviders.azureActiveDirectory.clientId
 
 
 

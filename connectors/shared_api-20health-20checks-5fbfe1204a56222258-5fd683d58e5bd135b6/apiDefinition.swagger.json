@@ -1,0 +1,66 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "webHeatlhTest",
+    "description": "Health checks for an API using ping and health endpoints",
+    "version": "1.0"
+  },
+  "host": "pp-test2-containerapp1.politetree-333612db.eastus.azurecontainerapps.io",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [],
+  "produces": [],
+  "paths": {
+    "/api/ping": {
+      "get": {
+        "tags": [
+          "webHttpTest"
+        ],
+        "produces": [
+          "text/plain"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "summary": "Ping",
+        "description": "Sends a request to /api/ping",
+        "operationId": "ping"
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "webHttpTest"
+        ],
+        "produces": [
+          "text/plain"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "summary": "Health",
+        "description": "Sends a request to /api/health",
+        "operationId": "health"
+      }
+    },
+    "/api/healthz": {}
+  },
+  "definitions": {},
+  "parameters": {},
+  "responses": {},
+  "securityDefinitions": {},
+  "security": [],
+  "tags": []
+}
