@@ -1,5 +1,5 @@
 @description('The base name to be used for all resources.')
-param baseName string = 'pp-test2'
+param baseName string
 
 param geoLocation string = 'unitedstates'
 

@@ -42,6 +42,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   kind: 'StorageV2'
   properties: {
     accessTier: 'Hot'
+    publicNetworkAccess: 'Disabled'
   }
 }
 
