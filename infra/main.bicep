@@ -6,7 +6,7 @@ param geoLocation string = 'unitedstates'
 param primaryLocation string = 'eastus'
 param secondaryLocation string = 'westus'
 
-param subnetName string = 'pp'
+param subnetName string = 'powerplatform'
 
 @description('Polices that are linked to Power Platform environments cannot be updates - set to false if the policy exists')
 param createPolicy bool = true
@@ -17,10 +17,10 @@ var vnetAddressSpacePrimary = '10.0.0.0/16'
 @description('The address space for the virtual network in the primary location.')
 var vnetAddressSpaceSecondary = '10.1.0.0/16'
 
-@description('The address range for the "pp" subnet.')
+@description('The address range for the "powerplatform" subnet.')
 var ppSubnetAddressRangePrimary = '10.0.0.0/24'
 
-@description('The address range for the "pp" subnet.')
+@description('The address range for the "powerplatform" subnet.')
 var ppSubnetAddressRangeSecondary = '10.1.0.0/24'
 
 var resourceToken = toLower(uniqueString(subscription().id, baseName, primaryLocation))

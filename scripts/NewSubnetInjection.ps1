@@ -1,8 +1,7 @@
 ﻿# Load thescript
-. "$PSScriptRoot\..\Common\EnvironmentEnterprisePolicyOperations.ps1"
+. "$PSScriptRoot\Common\EnvironmentEnterprisePolicyOperations.ps1"
 
-
-function RevertSubnetInjection 
+function NewSubnetInjection 
 {
     param(
         [Parameter(Mandatory=$true)]
@@ -22,6 +21,5 @@ function RevertSubnetInjection
     if (![bool]$endpoint) {
         $endpoint = "prod"
     }
-
-    UnLinkPolicyFromEnv -policyType vnet -environmentId $environmentId -policyArmId $policyArmId -endpoint $endpoint 
+    LinkPolicyToEnv -policyType vnet -environmentId $environmentId -policyArmId $policyArmId -endpoint $endpoint 
 }

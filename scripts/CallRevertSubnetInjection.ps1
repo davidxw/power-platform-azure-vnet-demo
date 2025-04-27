@@ -1,5 +1,5 @@
 # Load the RevertSubnetInjection script
-. "$PSScriptRoot\SubnetInjection\RevertSubnetInjection.ps1"
+. "$PSScriptRoot\RevertSubnetInjection.ps1"
 
 # Call the RevertSubnetInjection function with the specified parameters
 RevertSubnetInjection -environmentId "Default-cf7a4a08-6d30-40c8-bd52-d6f7494c0541" `
