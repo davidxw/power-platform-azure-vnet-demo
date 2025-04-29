@@ -71,18 +71,10 @@ If (!$apiHostSP) {
 
 $apiHostSPId = $apiHostSP.Id
 
-$user_impersonation_scope_name = "user_impersonation"
+# get scopes for the selected app
+$scopes = $apiHostSP.Oauth2PermissionScopes
+$joinedScopes = $scopes | Join-String -Property {$_.Value} -Separator ' '
 
-# Get user_impersonation scope 
-$user_impersonation_scope = $apiHostSP.Oauth2PermissionScopes | Where-Object { $_.Value -eq $user_impersonation_scope_name }
-
-If (!$user_impersonation_scope) {
-	Write-Warning "No user_impersonation scope found in the application."
-	Exit
-}
-
-Write-Host "User impersonation scope found:"
-$user_impersonation_scope | Format-Table -wrap -auto
 
 # if you want to update the consent type to a spcific user, change this variable to "Principal"
 $consentType = "AllPrincipals"
@@ -93,7 +85,7 @@ if ($consentType -eq "AllPrincipals") {
 		clientId    = $ConnectorHostAppServicePrincipalId
 		consentType = $consentType
 		resourceId  = $apiHostSPId
-		scope       = $user_impersonation_scope
+		scope       = $joinedScopes
 	}
 }
 else {
@@ -106,7 +98,7 @@ else {
 		consentType = $consentType
 		principalId = $selectedUser.Id
 		resourceId  = $apiHostSPId
-		scope       = $user_impersonation_scope
+		scope       = $joinedScopes
 	}
 }
 
@@ -178,10 +170,10 @@ $aad_application.Api.preAuthorizedApplications = $aad_application.Api.preAuthori
 	}
 }
 
-# Update the application with the pre-authorized application
+# Update the application with the pre-authorized application, all scopes are added by default
 $aad_application.Api.preAuthorizedApplications += @{
 	AppId          = $ConnectorHostAppAppId
-	DelegatedPermissionIds = @($user_impersonation_scope.Id)
+	DelegatedPermissionIds = $scopes | ForEach-Object {$_.Id}
 }
 
 Update-MgApplicationByAppId -AppId $ApiHostAppId -Api $aad_application.Api
