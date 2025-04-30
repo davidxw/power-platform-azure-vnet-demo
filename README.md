@@ -1,6 +1,6 @@
 # Power Platform Azure VNet Samples and Demo
 
-This repo contains templates, scripts and guides to help you set up and test a Power Platform environment with Azure VNet integration. Most of the contenet in the repo is based on the Microsoft documentation and samples, but it's not always easy to find and I have added some additional information and examples to help you get started.
+This repo contains templates, scripts and guides to help you set up and test a Power Platform environment with Azure VNet integration. Most of the contenet in the repo is based on the Microsoft documentation and samples - this documentation is not always easy to find and I have added some additional information and examples to help you get started.
 
 The can find the  Microsoft documentation for Azure VNet integration with Power Platform [here](https://learn.microsoft.com/en-in/power-platform/admin/vnet-support-overview).
 
@@ -8,7 +8,7 @@ Before you start, please note that this is a demo and not a production ready sol
 
 The demo contains the following sections - you can choose to use all or some of them:
 
-* Bicep template and a guide to create Azure resources (inlcuding VNets) and link them to a Power Platform environment - if you complete this step you will be able to use private Azure resources in your Power Platform environment and call them from Power Apps and Power Automate flows.
+* Bicep template and a guide to create Azure resources (inlcuding VNets) and link them to a Power Platform environment - if you complete this step you will be able to use private Azure resources in your Power Platform environment and call them from Power Apps and Power Automate flows using supported connectors.
 * Samples for the Power Platform connectors that support connectivity to resources in an Azure VNet. You can use these samples after you have set up the Azure resource contained in this demo, or you can modify them to use your own Azure resources. Demos of the following connectors are included:
   * Azure Blob Storage 
   * Custom Connectors - connecting to your custom APIs
@@ -101,15 +101,60 @@ The properties of the action should look something like this:
 
 Run the flow and check the output of the `List blobs (V2)` action. If the connection to the Azure VNet is working, you should see a list of blobs in the output.
 
-### Custom Connectors - connecting to your custom APIs
+Note that you haven't had to do anything special to use this connector to connect to resources in the Azure VNet - Azure DNS takes care of mapping the storage account name to the private endpoint in the VNet, and the Azure Blob Storage connector uses the same connection string as it would for a public storage account. This also applies to some of the other connectors that support connectivity to resources in an Azure VNet:
 
-Add paramaters to custom connectors:
+* SQL Server
+* Azure SQL Data Warehouse
+* Azure Queues
+* Azure Key Vault
+* Azure File Storage
 
-https://philcole.org/post/environment-specific-custom-connector-endpoints/
+### Connecting to your custom APIs
 
-1. Create custom connector
+While the above connectors support connectivity to Azure resources in an Azure VNet, you may also want to connect to your own custom APIs. Unfortunately the "HTTP" connector does not support connectivity to resources in an Azure VNet - if you have a custom API that you want to connect to you have a couple of options:
 
-### HTTP with Microsoft Entra ID (preauthorized) - connecting to your custom APIs with Entra ID authentication 
+* Create a custom connector
+* Use the HTTP with Microsoft Entra ID (preauthorized) connector (if you are using Entra ID authentication)
+
+The Bicep templates in this repo deploys two Azure Container Apps which can be used to test these options. One container app has no authentication (used to test a custom connector), and the other is protected with Entra ID authentication (used to test the HTTP with Microsoft Entra ID connector). Each app contains a simple API that responds to a `/api/ping` request.
+
+### Custom Connectors
+
+You can use two approaches to create a custom connector to connect to the unprotected Container App API:
+
+1. Mnually create a custom connector in Power Platform
+2. Create a custom connector using the the `paconn` CLI tool and API properties and definition files in this repo.
+
+The advantage of using the second approach is that the API properties file contains the required settings to make the value of your API host a property of the connection - if you manually create the custom connector the API host will be hardcoded in the connector.
+
+#### Manually create a custom connector in Power Platform
+
+1. In Power Platform, navigate to `More > Discover All > Data > Custom Connectors` (you can pin this to the left hand menu for easier access)
+1. Select `New custom connector > Import an OpenAPI file`
+1. Enter a name for your connector, and select the `apiDefinition.swagger.json` file from the `connectors\api-health-check` folder in this repo. This file contains the OpenAPI definition for the API hosted in the Container App. 
+1. Update the host name to match your environment. The host name is the FQDN of the unprotected Container App, and is output by the Bicep template. The FQDN will look something like this: `<name>.<region>.azurecontainerapps.io` (e.g. `pptest-ca-noauth.eastus.azurecontainerapps.io`).
+1. Select `Create Connector` (you can leave all the other settings unchanged)
+1. After the connector is created you can test the connection by selecting `6.Test` and then `Test Operation`. You should see a successful response from the API.
+
+You can then use the custom connector in a Power Automate flow. To do this, create a new flow and add the `Ping` action from the custom connector. The connection and action have no custom properties. If you run the flow you should see a successful response from the API.
+
+#### Import a custom connector using the `paconn` CLI tool
+
+The full details for using the `paconn` CLI tool are in the [Microsoft documentation](https://learn.microsoft.com/en-us/connectors/custom-connectors/paconn-cli), but here are the high level steps:
+
+1. Install the `paconn` CLI tool as the documentation link above
+1. From a terminal window, run the following commands from the root of the repo:
+```powershell
+paconn login
+paconn create -d .\connectors\api-health-checks\apiDefinition.swagger.json -p .\connectors\api-health-checks\apiProperties.json
+```
+This will create a custom connector in your Power Platform environment called `API Health Checks`. The connector is configured with a custom property for the API host - if you add this connector to a flow you will be prompted to enter the value of the API host. The value should be the FQDN of the unprotected Container App, and is output by the Bicep template. The host name is the FQDN of the unprotected Container App, and is output by the Bicep template. The FQDN will look something like this: `<name>.<region>.azurecontainerapps.io` (e.g. `pptest-ca-noauth.eastus.azurecontainerapps.io`).
+
+![ping connection](docs/images/ping.png)
+
+(Thanks to [this](https://philcole.org/post/environment-specific-custom-connector-endpoints/) blog post for instructions on how to set up the custom property for the API host)
+
+### Use the HTTP with Microsoft Entra ID (preauthorized)  
 
 Using Entra ID (preauth):
 
