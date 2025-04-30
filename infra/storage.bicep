@@ -105,5 +105,6 @@ resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneG
   }
 }
 
+output blobServiceEndpoint string = storageAccount.properties.primaryEndpoints.blob
 
 

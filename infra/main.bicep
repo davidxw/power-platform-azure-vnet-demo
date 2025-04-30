@@ -190,4 +190,5 @@ output policyArmId string = enterprisePolicy.id
 output containerAppNoauthFQDN string = containerApp.outputs.containerNoauthAppFQDN
 output containerAppauthFQDN string = containerApp.outputs.containerAppAuthFQDN
 output containerAppAuthAppId string = containerApp.outputs.containerAppAuthAppId
+output blobServiceEndpoint string = blob.outputs.blobServiceEndpoint
 

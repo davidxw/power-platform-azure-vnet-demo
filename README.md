@@ -71,6 +71,7 @@ The Bicep template writes a number of values to the outputs collection - these v
 `containerAppNoauthFQDN` - the FQDN of the unprotected Container App. This is required to set up a custom connector to call the API.
 `containerAppauthFQDN` - the FQDN of the protected Container App. This is required to set up the HTTP with Microsoft Entra ID (preauthorized) connector to call the API.
 `containerAppAuthAppId` - the application ID of the Entra ID app registration used to protect the Container App. This is required to set up the HTTP with Microsoft Entra ID (preauthorized) connector to call the API.
+`blobServiceEndpoint` - the blob service endpoint of the storage account. This is required to set up a Blob Storage connector
 
 ### 3. Connect your Power Platform environment to the Azure VNet using PowerShell
 
@@ -83,9 +84,23 @@ To check if the environment was successfully connected to the Azure VNet you nee
 
 To remove the connection to the Azure VNet you can use the `RevertSubnetInjection.ps1` script. This script takes the same parameters as the `NewSubnetInjection.ps1` script, and will remove the connection to the Azure VNet.
 
-## Sample for Test the Virtual Network Connection
+## Samples for Testing the Virtual Network Connection
 
 ### Azure Blob Storage
+
+The simplest way to test the connection to the Azure VNet is to use the Azure Blob Storage connector. This connector supports connectivity to resources in an Azure VNet, and can be used to read, write and list files to the Azure Storage account created by the Bicep template. Because public connectivity to this storage account account is disabled, any succssful operation using the Azure Blob Storage connector will confirm that the connection to the Azure VNet is working.
+
+* Create a new Power Automate flow in your Power Platform environment 
+* Add the `List blobs (V2)` action, and use the key from the Storage account to create a connection.
+* In the "Storage account or blob endpoint" field you will need to enter the FQDN of the storage account. This value is output by the Bicep template, and is the name of the storage account followed by `.blob.core.windows.net` (e.g. `mystorageaccount.blob.core.windows.net`). 
+* Select "files" as the folder. It doesn't matter if there are no files in the folder, we are just testing the connection
+
+The properties of the action should look something like this:
+
+![List files properties](docs/images/blob.png)
+
+Run the flow and check the output of the `List blobs (V2)` action. If the connection to the Azure VNet is working, you should see a list of blobs in the output.
+
 ### Custom Connectors - connecting to your custom APIs
 
 Add paramaters to custom connectors:

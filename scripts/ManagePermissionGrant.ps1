@@ -35,7 +35,7 @@ $selectedEnvName = "Global"
 
 Connect-MgGraph -Environment $selectedEnvName -Scopes "User.ReadWrite.All Directory.AccessAsUser.All" -NoWelcome
 
-# Find Service principal in the local tenant associated to the reuired Microsoft 1st party app
+# Find Service principal in the local tenant associated to the connector host app
 
 $ConnectorHostAppServicePrincipal = Get-MgServicePrincipal -Filter "appId eq '$ConnectorHostAppAppId'"
 
@@ -54,13 +54,13 @@ If (!$ConnectorHostAppServicePrincipal) {
 }
 
 $ConnectorHostAppServicePrincipalId = $ConnectorHostAppServicePrincipal.Id
-$ConnectorHostAppServicePrincipalDisplayName = $ConnectorHostAppServicePrincipal.DisplayName
 
 Write-Host "ConnectorHostApp Service principal found:"
 $ConnectorHostAppServicePrincipal | Format-Table -wrap -auto
 
 
 # Select scopes for the 1st party app selected
+
 # Find SP associated to the selected app
 $apiHostSP = Get-MgServicePrincipal -Filter "appId eq '$ApiHostAppId'"
 
