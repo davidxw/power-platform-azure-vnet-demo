@@ -1,10 +1,11 @@
 # Power Platform Azure VNet Samples and Demo
 
-This repo contains templates, scripts and guides to help you set up and test a Power Platform environment with Azure VNet integration. Most of the contenet in the repo is based on the Microsoft documentation and samples - this documentation is not always easy to find and I have added some additional information and examples to help you get started.
+This repo contains templates, scripts and guides to help you set up and test a Power Platform environment with Azure VNet integration. Most of the content in the repo is based on the Microsoft documentation and samples - this documentation is not always easy to find and I have added some additional information and examples to help you get started.
 
-The can find the  Microsoft documentation for Azure VNet integration with Power Platform [here](https://learn.microsoft.com/en-in/power-platform/admin/vnet-support-overview).
+You can find the  Microsoft documentation for Azure VNet integration with Power Platform [here](https://learn.microsoft.com/en-in/power-platform/admin/vnet-support-overview).
 
-Before you start, please note that this is a demo and not a production ready solution. The templates and scripts are provided as-is and should be used at your own risk. I've also assumed that you have good knowledge of Azure, Power Platform and PowerShell - there are quite a few steps to get everything set up and running and I haven't provided detailed instructions for each step.
+> [!NOTE]
+> Before you start, please note that this is a demo and not a production ready solution. The templates and scripts are provided as-is and should be used at your own risk. I've also assumed that you have good knowledge of Azure, Power Platform and PowerShell - there are quite a few steps to get everything set up and running and I haven't provided detailed instructions for each step.
 
 The demo contains the following sections - you can choose to use all or some of them:
 
@@ -34,20 +35,20 @@ These steps are described in the [Microsoft documentation](https://learn.microso
 Management of the connection from Power Platform to an Azure VNet is done using PowerShell. Before you can run the PowerShell scripts, you need to set up your local PowerShell environment and you Azure subscription with the required modules and services. Two scripts are [provided by Microsoft](https://github.com/microsoft/PowerApps-Samples/blob/master/powershell/enterprisePolicies/README.md#how-to-run-setup-scripts) to help you with this process, and these have been included in the `scripts` folder of this repo. The scripts are:
 
 * `SetupSubscriptionForPowerPlatform.ps1` - registers the Azure subscription for Microsoft.PowerPlatform resource provider and also allow lists the subscription for enterprisePoliciesPreview feature. Alternatively you can register the required providers and features with the following Azure CLI commands:
-```
-az provider register --namespace Microsoft.PowerPlatform
-az feature register --name enterprisePoliciesPreview --namespace Microsoft.PowerPlatform
-```
+  ```
+  az provider register --namespace Microsoft.PowerPlatform
+  az feature register --name enterprisePoliciesPreview --namespac  e Microsoft.PowerPlatform
+  ```
 * ` InstallPowerAppsCmdlets.ps1` - installs the required modules to run Enterprise Policies scripts. Alternatively you can manually install the following PowerShell modules:
-```powershell
-Az
-Microsoft.PowerApps.Administration.PowerShell
-Microsoft.PowerApps.PowerShell
-```
+
+  * Az
+  * Microsoft.PowerApps.Administration.PowerShell
+  * Microsoft.PowerApps.PowerShell
+
 
 ### 2. Create the required Azure resources using the Bicep template provided in this repo
 
-Clone this repo to your local machine and open repo in Visual Studio Code. From a teminal window, run the following command from the `infra` directory to create the Azure resources:
+Clone this repo to your local machine and open repo in Visual Studio Code. From a teminal window, run the following commands from the `infra` directory to create the Azure resources:
 
 ``` powershell
 $rg = "<your resource group name>"
@@ -56,8 +57,9 @@ az deployment group create --resource-group $rg --template-file ./main.bicep --p
 ``` 
 
 This script will create the following resources in your Azure subscription:
+
 ![Azure diagram](docs/images/azure.drawio.svg)
-* Two Azure VNets, one in each of the regions association with the Power Platform environment. The default regions are `eastus` and `westus` for Power Plaform envrionments in the United States.  If your Power Plaform environment is in a different region see the [supported region list](https://learn.microsoft.com/en-in/power-platform/admin/vnet-support-overview#supported-regions) and update the `pimaryLocation` and `secondaryLocation` parameters in the Bicep template appropriately. Note that the template currently doesn't support Power Platform regions with a single associated Azure region. The created VNets are peered.
+* Two Azure VNets, one in each of the regions associated with your Power Platform environment. The default regions are `eastus` and `westus` for Power Plaform envrionments in the United States.  If your Power Plaform environment is in a different region see the [supported region list](https://learn.microsoft.com/en-in/power-platform/admin/vnet-support-overview#supported-regions) and update the `pimaryLocation` and `secondaryLocation` parameters in the Bicep template appropriately. Note that the template currently doesn't support Power Platform regions with a single associated Azure region. The created VNets are peered.
 * A subnet in each VNet delegated to Power Platform. The subnets are named `powerplatform` and are delegated to `Microsoft.PowerPlatform/enterprisePolicies`
 * A `NetworkInjection` Enterprise Policy - this policy is required to connect the Power Platform environment to the Azure VNets. Note that actual connection is performed in a later step.
 * An Azure Storage account in the primary region, with a private endpoint in the primary VNet. The storage account is configured with a private DNS zone, and public access is disabled. A single blob container named `files` is added to the storage account.
@@ -67,24 +69,26 @@ The Storage account and Container Apps are deployed using separate Bicep modules
 
 The Bicep template writes a number of values to the outputs collection - these values are required if you are also going to set up a custom conenctor to call the APIs, or if you are going to call the protected API using Entra ID authentication. The values are:
 
-`policyArmId` - the resource ID of the `NetworkInjection` Enterprise Policy. This is required to connect the Power Platform environment to the Azure VNet.
-`containerAppNoauthFQDN` - the FQDN of the unprotected Container App. This is required to set up a custom connector to call the API.
-`containerAppauthFQDN` - the FQDN of the protected Container App. This is required to set up the HTTP with Microsoft Entra ID (preauthorized) connector to call the API.
-`containerAppAuthAppId` - the application ID of the Entra ID app registration used to protect the Container App. This is required to set up the HTTP with Microsoft Entra ID (preauthorized) connector to call the API.
-`blobServiceEndpoint` - the blob service endpoint of the storage account. This is required to set up a Blob Storage connector
+* `policyArmId` - the resource ID of the `NetworkInjection` Enterprise Policy. This is required to connect the Power Platform environment to the Azure VNet.
+* `containerAppNoauthFQDN` - the FQDN of the unprotected Container App. This is required to set up a custom connector to call the API.
+* `containerAppauthFQDN` - the FQDN of the protected Container App. This is required to set up the HTTP with Microsoft Entra ID (preauthorized) connector to call the API.
+* `containerAppAuthAppId` - the application ID of the Entra ID app registration used to protect the Container App. This is required to set up the HTTP with Microsoft Entra ID (preauthorized) connector to call the API.
+* `blobServiceEndpoint` - the blob service endpoint of the storage account. This is required to set up a Blob Storage connector
 
 ### 3. Connect your Power Platform environment to the Azure VNet using PowerShell
 
 To connect your Power Plaform environment you will need to run the `NewSubnetInjection.ps1` script (the original is [here](https://github.com/microsoft/PowerApps-Samples/tree/master/powershell/enterprisePolicies#7-set-subnet-injection-for-an-environment), can also be found in the `scripts` folder in this repo). This script takes the following parameters:
 
 * `-environmentId` - the ID of the Power Platform environment to connect to the Azure VNet. This can be found in the Power Platform admin center. Note this is not the name of the environment, but the GUID that is used to identify the environment in Azure (e.g. `Default-cf7a4a08-6d30-40c8-bd52-d6f7494c0541`)
-* `-policyArmId` - the resource ID of the `NetworkInjection` Enterprise Policy created be the bicep templates in the previous. This can be found by looking for the value of the `policyArmId` output from the Bicep template, or by looking in the Azure portal for the `NetworkInjection` policy in your resource group. The resource ID will look something like this: `/subscriptions/<subscriptionId>/resourceGroups/<rgName>/providers/Microsoft.PowerPlatform/enterprisePolicies/<policyName>`
+* `-policyArmId` - the resource ID of the `NetworkInjection` Enterprise Policy created be the Bicep templates in the previous step. This can be found by looking for the value of the `policyArmId` output from the Bicep template, or by looking in the Azure portal for the `NetworkInjection` policy in your resource group. The resource ID will look something like this: `/subscriptions/<subscriptionId>/resourceGroups/<rgName>/providers/Microsoft.PowerPlatform/enterprisePolicies/<policyName>`
 
 To check if the environment was successfully connected to the Azure VNet you need to check the Power Platform admin center. Navigate to `Manage > Environments > <your environment>`, and check the recent operations list - you should see an operation of type `New Network Injection Policy` with a status of `Succeeded`. 
 
 To remove the connection to the Azure VNet you can use the `RevertSubnetInjection.ps1` script. This script takes the same parameters as the `NewSubnetInjection.ps1` script, and will remove the connection to the Azure VNet.
 
 ## Samples for Testing the Virtual Network Connection
+
+With Azure resources created and the Power Platform environment connected to the Azure VNet, you can now test the connection to the Azure VNet using some supported connectors. 
 
 ### Azure Blob Storage
 
@@ -118,16 +122,16 @@ While the above connectors support connectivity to Azure resources in an Azure V
 
 The Bicep templates in this repo deploys two Azure Container Apps which can be used to test these options. One container app has no authentication (used to test a custom connector), and the other is protected with Entra ID authentication (used to test the HTTP with Microsoft Entra ID connector). Each app contains a simple API that responds to a `/api/ping` request.
 
-### Custom Connectors
+#### Custom Connectors
 
 You can use two approaches to create a custom connector to connect to the unprotected Container App API:
 
 1. Mnually create a custom connector in Power Platform
 2. Create a custom connector using the the `paconn` CLI tool and API properties and definition files in this repo.
 
-The advantage of using the second approach is that the API properties file contains the required settings to make the value of your API host a property of the connection - if you manually create the custom connector the API host will be hardcoded in the connector.
+The advantage of using the second approach is that the connector definition files in this repo contain the required settings to make the value of your API host a property of the connection - if you manually create the custom connector the API host will be hardcoded in the connector.
 
-#### Manually create a custom connector in Power Platform
+##### Manually create a custom connector in Power Platform
 
 1. In Power Platform, navigate to `More > Discover All > Data > Custom Connectors` (you can pin this to the left hand menu for easier access)
 1. Select `New custom connector > Import an OpenAPI file`
@@ -138,23 +142,24 @@ The advantage of using the second approach is that the API properties file conta
 
 You can then use the custom connector in a Power Automate flow. To do this, create a new flow and add the `Ping` action from the custom connector. The connection and action have no custom properties. If you run the flow you should see a successful response from the API.
 
-#### Import a custom connector using the `paconn` CLI tool
+##### Import a custom connector using the `paconn` CLI tool
 
 The full details for using the `paconn` CLI tool are in the [Microsoft documentation](https://learn.microsoft.com/en-us/connectors/custom-connectors/paconn-cli), but here are the high level steps:
 
-1. Install the `paconn` CLI tool as the documentation link above
+1. Install the `paconn` CLI tool as per the documentation link above
 1. From a terminal window, run the following commands from the root of the repo:
 ```powershell
 paconn login
 paconn create -d .\connectors\api-health-checks\apiDefinition.swagger.json -p .\connectors\api-health-checks\apiProperties.json
 ```
-This will create a custom connector in your Power Platform environment called `API Health Checks`. The connector is configured with a custom property for the API host - if you add this connector to a flow you will be prompted to enter the value of the API host. The value should be the FQDN of the unprotected Container App, and is output by the Bicep template. The host name is the FQDN of the unprotected Container App, and is output by the Bicep template. The FQDN will look something like this: `<name>.<region>.azurecontainerapps.io` (e.g. `pptest-ca-noauth.eastus.azurecontainerapps.io`).
+This will create a custom connector in your Power Platform environment called `API Health Checks`. The connector is configured with a custom property for the API host - if you add this connector to a flow you will be prompted for this value. The host name is the FQDN of the unprotected Container App, and is output by the Bicep template. The FQDN will look something like this: `<name>.<region>.azurecontainerapps.io` (e.g. `pptest-ca-noauth.eastus.azurecontainerapps.io`).
+
 
 ![ping connection](docs/images/ping.png)
 
 (Thanks to [this](https://philcole.org/post/environment-specific-custom-connector-endpoints/) blog post for instructions on how to set up the custom property for the API host)
 
-### Use the HTTP with Microsoft Entra ID (preauthorized)  
+#### Use the HTTP with Microsoft Entra ID (preauthorized)  
 
 Using Entra ID (preauth):
 
@@ -169,5 +174,5 @@ Add authorized client app to Azure AD (Expose an API, Authorized client applicat
 
 
 
-Note: to make the draw.io diagrams render properly in dark mode on GH add `color-scheme: light dark` to the SVG style - this will be overritten if you modify the file in draw.io
+
 

@@ -1,0 +1,1 @@
+Note: to make the draw.io diagrams render properly in dark mode on GH add `color-scheme: light dark` to the SVG style - this will be overritten if you modify the file in draw.io
