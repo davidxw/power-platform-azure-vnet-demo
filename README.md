@@ -53,7 +53,7 @@ Clone this repo to your local machine and open repo in Visual Studio Code. From 
 ``` powershell
 $rg = "<your resource group name>"
 $name = "<base name for your resources>"
-az deployment group create --resource-group $rg --template-file ./main.bicep --parameters --name $name
+az deployment group create --resource-group $rg --template-file ./main.bicep --parameters baseName=$name
 ``` 
 
 This script will create the following resources in your Azure subscription:
@@ -72,7 +72,6 @@ The Bicep template writes a number of values to the outputs collection - these v
 * `policyArmId` - the resource ID of the `NetworkInjection` Enterprise Policy. This is required to connect the Power Platform environment to the Azure VNet.
 * `containerAppNoauthFQDN` - the FQDN of the unprotected Container App. This is required to set up a custom connector to call the API.
 * `containerAppauthFQDN` - the FQDN of the protected Container App. This is required to set up the HTTP with Microsoft Entra ID (preauthorized) connector to call the API.
-* `containerAppAuthAppId` - the application ID of the Entra ID app registration used to protect the Container App. This is required to set up the HTTP with Microsoft Entra ID (preauthorized) connector to call the API.
 * `blobServiceEndpoint` - the blob service endpoint of the storage account. This is required to set up a Blob Storage connector
 
 ### 3. Connect your Power Platform environment to the Azure VNet using PowerShell
@@ -81,6 +80,10 @@ To connect your Power Plaform environment you will need to run the `NewSubnetInj
 
 * `-environmentId` - the ID of the Power Platform environment to connect to the Azure VNet. This can be found in the Power Platform admin center. Note this is not the name of the environment, but the GUID that is used to identify the environment in Azure (e.g. `Default-cf7a4a08-6d30-40c8-bd52-d6f7494c0541`)
 * `-policyArmId` - the resource ID of the `NetworkInjection` Enterprise Policy created be the Bicep templates in the previous step. This can be found by looking for the value of the `policyArmId` output from the Bicep template, or by looking in the Azure portal for the `NetworkInjection` policy in your resource group. The resource ID will look something like this: `/subscriptions/<subscriptionId>/resourceGroups/<rgName>/providers/Microsoft.PowerPlatform/enterprisePolicies/<policyName>`
+
+``` powershell
+ .\CallNewSubnetInjection.ps1  -environmentId "Default-cf7a4a08-6d30-40c8-bd52-d6f7494c0541" -policyArmId "/subscriptions/68dfa90d-6200-4bc6-bdad-178344084a61/resourceGroups/pp-vnet/providers/Microsoft.PowerPlatform/enterprisePolicies/pp-vnet-policy"
+```
 
 To check if the environment was successfully connected to the Azure VNet you need to check the Power Platform admin center. Navigate to `Manage > Environments > <your environment>`, and check the recent operations list - you should see an operation of type `New Network Injection Policy` with a status of `Succeeded`. 
 
@@ -96,7 +99,7 @@ The simplest way to test the connection to the Azure VNet is to use the Azure Bl
 
 * Create a new Power Automate flow in your Power Platform environment 
 * Add the `List blobs (V2)` action, and use the key from the Storage account to create a connection.
-* In the "Storage account or blob endpoint" field you will need to enter the FQDN of the storage account. This value is output by the Bicep template, and is the name of the storage account followed by `.blob.core.windows.net` (e.g. `mystorageaccount.blob.core.windows.net`). 
+* In the "Storage account or blob endpoint" field you will need to enter the FQDN of the storage account. This value is output by the Bicep template, and is the name of the storage account followed by `.blob.core.windows.net` (e.g. `https://mystorageaccount.blob.core.windows.net`). 
 * Select "files" as the folder. It doesn't matter if there are no files in the folder, we are just testing the connection
 
 The properties of the action should look something like this:

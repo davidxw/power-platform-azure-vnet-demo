@@ -23,7 +23,7 @@ var ppSubnetAddressRangePrimary = '10.0.0.0/24'
 @description('The address range for the "powerplatform" subnet.')
 var ppSubnetAddressRangeSecondary = '10.1.0.0/24'
 
-var resourceToken = toLower(uniqueString(subscription().id, baseName, primaryLocation))
+//var resourceToken = toLower(uniqueString(subscription().id, baseName, primaryLocation))
 
 var locations = [
   { 
@@ -189,6 +189,5 @@ module containerApp 'containerapps.bicep' = {
 output policyArmId string = enterprisePolicy.id
 output containerAppNoauthFQDN string = containerApp.outputs.containerNoauthAppFQDN
 output containerAppauthFQDN string = containerApp.outputs.containerAppAuthFQDN
-output containerAppAuthAppId string = containerApp.outputs.containerAppAuthAppId
 output blobServiceEndpoint string = blob.outputs.blobServiceEndpoint
 

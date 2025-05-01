@@ -23,10 +23,6 @@ resource primaryVnet 'Microsoft.Network/virtualNetworks@2021-05-01' existing = {
   name: primaryVnetName
 }
 
-resource secondaryVnet 'Microsoft.Network/virtualNetworks@2021-05-01' existing = {
-  name: secondaryVnetName
-}
-
 resource containerAppSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = {
   name: containerAppSubnetName
   parent: primaryVnet
@@ -136,16 +132,14 @@ resource containerApp_auth 'Microsoft.App/containerApps@2023-05-01' = {
 
 resource containerApp_auth_config 'Microsoft.App/containerApps/authConfigs@2025-01-01' = {
   parent: containerApp_auth
-  name: 'authConfig'
+  name: 'current'
   properties: {
     identityProviders: {
       azureActiveDirectory: {
         enabled: true
-        automatedProvisioning: true
+        isAutoProvisioned: true
       }
     }
-    tokenStoreEnabled: true
-    defaultProvider: 'AzureActiveDirectory'
   }
 }
 
@@ -163,7 +157,6 @@ module privateDnsZoneModule 'privatedns.bicep' = {
 
 output containerNoauthAppFQDN string = containerApp_noauth.properties.configuration.ingress.fqdn
 output containerAppAuthFQDN string = containerApp_auth.properties.configuration.ingress.fqdn
-output containerAppAuthAppId string = containerApp_auth_config.properties.identityProviders.azureActiveDirectory.clientId
 
 
 

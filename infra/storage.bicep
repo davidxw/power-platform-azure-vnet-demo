@@ -11,7 +11,7 @@ param primaryVnetName string = 'pp-vnet'
 param secondaryVnetName string = 'pp-vnet-secondary'
 
 @description('The name of the private DNS zone for blob storage.')
-var privateDnsZoneName = 'privatelink.blob.core.windows.net'
+var privateDnsZoneName = 'privatelink.blob.${environment().suffixes.storage}'
 
 @description('The address range for the private endpoint subnet.')
 var privateEndpointSubnetAddressRange = '10.0.1.0/24'
@@ -64,7 +64,7 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = {
   location: location
   properties: {
     subnet: {
-      id: resourceId(primaryVnet.id, 'subnets', privateEndpointSubnetName)
+      id: resourceId('Microsoft.Network/virtualNetworks/subnets', primaryVnetName, privateEndpointSubnetName)
     }
     privateLinkServiceConnections: [
       {
