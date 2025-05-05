@@ -59,7 +59,7 @@ az deployment group create --resource-group $rg --template-file ./main.bicep --p
 This script will create the following resources in your Azure subscription:
 
 ![Azure diagram](docs/images/azure.drawio.svg)
-* Two Azure VNets, one in each of the regions associated with your Power Platform environment. The default regions are `eastus` and `westus` for Power Plaform envrionments in the United States.  If your Power Plaform environment is in a different region see the [supported region list](https://learn.microsoft.com/en-in/power-platform/admin/vnet-support-overview#supported-regions) and update the `pimaryLocation` and `secondaryLocation` parameters in the Bicep template appropriately. Note that the template currently doesn't support Power Platform regions with a single associated Azure region. The created VNets are peered.
+* Two Azure VNets, one in each of the regions associated with your Power Platform environment. The default regions are `eastus` and `westus` for Power Plaform envrionments in the United States.  If your Power Plaform environment is in a different region see the [supported region list](https://learn.microsoft.com/en-in/power-platform/admin/vnet-support-overview#supported-regions) and update the `pimaryLocation` and `secondaryLocation` parameters in the Bicep template appropriately. Note that Power Platform environment regions with single Azure regions (Sweden and Singapore) currently don't support Power Platorm VNet integration. The created VNets are peered.
 * A subnet in each VNet delegated to Power Platform. The subnets are named `powerplatform` and are delegated to `Microsoft.PowerPlatform/enterprisePolicies`
 * A `NetworkInjection` Enterprise Policy - this policy is required to connect the Power Platform environment to the Azure VNets. Note that actual connection is performed in a later step.
 * An Azure Storage account in the primary region, with a private endpoint in the primary VNet. The storage account is configured with a private DNS zone, and public access is disabled. A single blob container named `files` is added to the storage account.
@@ -86,6 +86,9 @@ To connect your Power Plaform environment you will need to run the `NewSubnetInj
 ```
 
 To check if the environment was successfully connected to the Azure VNet you need to check the Power Platform admin center. Navigate to `Manage > Environments > <your environment>`, and check the recent operations list - you should see an operation of type `New Network Injection Policy` with a status of `Succeeded`. 
+
+> [!NOTE]
+> Azure VNet integration is only supported for Power Platform Managed Environments. 
 
 To remove the connection to the Azure VNet you can use the `RevertSubnetInjection.ps1` script. This script takes the same parameters as the `NewSubnetInjection.ps1` script, and will remove the connection to the Azure VNet.
 
@@ -164,15 +167,18 @@ This will create a custom connector in your Power Platform environment called `A
 
 #### Use the HTTP with Microsoft Entra ID (preauthorized)  
 
-Using Entra ID (preauth):
+1. Add a HTTP with Microsoft Entra ID (preauthorized) action to your flow and try to connect. The Application ID is the generated Application ID of the Entra authentication app registration created by the Bicep template for the authorized container. The Application ID URI is the value of the `containerAppauthFQDN` output from the Bicep template.
+IMAGE
+1. You will likely get a similar errror to the following:
+IMAGE
+The reasons you get this error are explained [this](https://www.blimped.nl/calling-entra-id-secured-azure-function-from-power-automate/) blog post and are due to the fact that the Entra ID authentication app registration is not configured to allow access from the Power Platform environment. To fix this you need to add the Power Platform environment as an authorized client app in the Entra ID app registration. There are a number of ways to this (as there are many ways to interact with Entra ID) - the blob post uses the M365 CLI, and there is a script in the [Microsoft Documentation](link) that uses PowerShell and the Entra ID cmdlets. This script has some hardcoded values though, so in this repo I have provided a more generic version that you can use to complete the setup for this demo.
 
-https://www.blimped.nl/calling-entra-id-secured-azure-function-from-power-automate/
+(Script instructions)
 
-@pnp/cli-microsoft365
-Add authorized client app to Azure AD (Expose an API, Authorized client applications)
+This script does does the following:
 
-1. Update Entra ID app registration (powershell)
-1. Add Authorized client app to Azure AD (powershell)([Update AAD app API settings](https://learn.microsoft.com/en-us/powershell/module/az.resources/update-azadapplication?view=azps-13.4.0#-api))
+1. Creates an Entra app registration for the connector host (if it doesn't already exist)
+1. Adds API permissions for the connector host to allow it to call your API with the required scopes
 
 
 

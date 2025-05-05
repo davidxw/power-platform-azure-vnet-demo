@@ -116,6 +116,9 @@ function LinkPolicyToEnv
     # Poll the operation every retry-after seconds
     $operationLocation = $headers.'operation-location'
     $retryAfter = $headers.'Retry-After'
+
+    Write-Host "Operation Location: $operationLocation"
+
     Write-Host "Polling the link operation every $retryAfter seconds."
 
     PollLinkUnlinkOperation $operationLocation $retryAfter
