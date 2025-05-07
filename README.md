@@ -184,7 +184,7 @@ Follow the steps below to set up the HTTP with Microsoft Entra ID (preauthorized
 
    ![Entra ID error](docs/images/entra_error.png)
 
-   The reasons you get this error are explained [this](https://www.blimped.nl/calling-entra-id-secured-azure-function-from-power-automate/) blog post and are due to the fact that the Entra ID authentication app registration is not configured to allow access from the Power Platform environment. To fix this you need to add the Power Platform environment as an authorized client app in the Entra ID app registration. There are a number of ways to this (as there are many ways to interact with Entra ID) - the blob post uses the M365 CLI, and there is a script in the [Microsoft Documentation](link) that uses PowerShell and the Entra ID cmdlets. This script has some hardcoded values though, so in this repo I have provided a more generic version that you can use to complete the setup for this demo.
+   The reasons you get this error are explained [this](https://www.blimped.nl/calling-entra-id-secured-azure-function-from-power-automate/) blog post and are due to the fact that the Entra ID authentication app registration is not configured to allow access from the Power Platform environment (note that this blog post is referring to the use of this connector for APIs that are not behind a VNet, but the same principles apply). To fix this you need to add the Power Platform environment as an authorized client app in the Entra ID app registration. There are a number of ways to this (as there are many ways to interact with Entra ID) - the blob post uses the M365 CLI, and there is a script in the [Microsoft Documentation](link) that uses PowerShell and the Entra ID cmdlets. This script has some hardcoded values though, so in this repo I have provided a more generic version that you can use to complete the setup for this demo.
 
    To run the script in this repo, follow the steps below:    
 
@@ -211,8 +211,11 @@ If you have run all the steps in this demo you should have a working Power Platf
 
 You can drill into the results of each action but the fact that each has succeeded is a good indication that the connection to the Azure VNet is working.
 
+## Links
 
-
-
-
-
+* [Microsoft Power Platform VNet Integration Documentation](https://learn.microsoft.com/en-in/power-platform/admin/vnet-support-overview)
+* [Source Setup Scripts](https://github.com/microsoft/PowerApps-Samples/blob/master/powershell/enterprisePolicies/README.md#how-to-run-seup-scripts)
+* [Supported Region List](https://learn.microsoft.com/en-in/power-platform/admin/vnet-support-overview#supported-regions)
+* [paconn Tool](https://learn.microsoft.com/en-us/connectors/custom-connectors/paconn-cli)
+* [Environment Specific Custom Connector Endpoints](https://philcole.org/post/environment-specific-custom-connector-endpoints/) 
+* [Calling Entra ID secured Azure Functions from Power Automate](https://www.blimped.nl/calling-entra-id-secured-azure-function-from-power-automate/) 
