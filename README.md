@@ -160,25 +160,49 @@ paconn create -d .\connectors\api-health-checks\apiDefinition.swagger.json -p .\
 ```
 This will create a custom connector in your Power Platform environment called `API Health Checks`. The connector is configured with a custom property for the API host - if you add this connector to a flow you will be prompted for this value. The host name is the FQDN of the unprotected Container App, and is output by the Bicep template. The FQDN will look something like this: `<name>.<region>.azurecontainerapps.io` (e.g. `pptest-ca-noauth.eastus.azurecontainerapps.io`).
 
-
 ![ping connection](docs/images/ping.png)
 
 (Thanks to [this](https://philcole.org/post/environment-specific-custom-connector-endpoints/) blog post for instructions on how to set up the custom property for the API host)
 
 #### Use the HTTP with Microsoft Entra ID (preauthorized)  
 
-1. Add a HTTP with Microsoft Entra ID (preauthorized) action to your flow and try to connect. The Application ID is the generated Application ID of the Entra authentication app registration created by the Bicep template for the authorized container. The Application ID URI is the value of the `containerAppauthFQDN` output from the Bicep template.
-IMAGE
-1. You will likely get a similar errror to the following:
-IMAGE
-The reasons you get this error are explained [this](https://www.blimped.nl/calling-entra-id-secured-azure-function-from-power-automate/) blog post and are due to the fact that the Entra ID authentication app registration is not configured to allow access from the Power Platform environment. To fix this you need to add the Power Platform environment as an authorized client app in the Entra ID app registration. There are a number of ways to this (as there are many ways to interact with Entra ID) - the blob post uses the M365 CLI, and there is a script in the [Microsoft Documentation](link) that uses PowerShell and the Entra ID cmdlets. This script has some hardcoded values though, so in this repo I have provided a more generic version that you can use to complete the setup for this demo.
+The final sample in this repo is a demo of the HTTP with Microsoft Entra ID (preauthorized) connector. This connector allows you to call your custom APIs that are protected with Entra ID authentication, and, like most use cases with Entra ID, there are quite a few moving parts. For this particular demo we'll be attempting to call an API that has been deployed into an Azure Container App, which has been protected with Entra ID authentication. The protected container app deplopyed by the Bicep template in this repo is called `pp-vnet-ca-auth`.
 
-(Script instructions)
+Follow the steps below to set up the HTTP with Microsoft Entra ID (preauthorized) connector:
 
-This script does does the following:
+1. Add an `Invoke an HTTP request` action from the `HTTP with Microsoft Entra ID (preauthorized)` connector to your flow, and when prompted for the connection details enter the following values:
+   * **Connection Name**: A name for the connection (e.g. `HTTP with Entra ID`)
+   * **Authentication Type**: `Login with Microsoft Entra ID`
+   * **Microsoft Entra ID Resource URI**: The Application ID URI of the Entra authentication app registration created by the Bicep template for the authorized container. To get this value navigate to the Security -> Authentication tab of the `pp-vnet-ca-auth` container app in the Azure portal, and copy the value of the `App (client) ID` field. Enter this value as `api://<id>` (e.g. `api://d22caf39-23f6-4e9d-8a86-990fd406bdfe`).
+   * **Base Resource URL**: The FQDN of the `pp-vnet-ca-noauth` container app deployed by the Bicep template. This is the value of the `containerAppauthFQDN` output from the Bicep template. The FQDN will look something like this: `pp-vnet-ca-auth.<generated_name>.<region>.azurecontainerapps.io` 
 
-1. Creates an Entra app registration for the connector host (if it doesn't already exist)
-1. Adds API permissions for the connector host to allow it to call your API with the required scopes
+     The properties of the action should look something like this:
+
+     ![HTTP with Entra ID](docs/images/entra_connection.png)
+
+1. Sign in to the connection using your Entra ID credentials, and you will receive an error similar to the following:
+
+   ![Entra ID error](docs/images/entra_error.png)
+
+   The reasons you get this error are explained [this](https://www.blimped.nl/calling-entra-id-secured-azure-function-from-power-automate/) blog post and are due to the fact that the Entra ID authentication app registration is not configured to allow access from the Power Platform environment. To fix this you need to add the Power Platform environment as an authorized client app in the Entra ID app registration. There are a number of ways to this (as there are many ways to interact with Entra ID) - the blob post uses the M365 CLI, and there is a script in the [Microsoft Documentation](link) that uses PowerShell and the Entra ID cmdlets. This script has some hardcoded values though, so in this repo I have provided a more generic version that you can use to complete the setup for this demo.
+
+   To run the script in this repo, follow the steps below:    
+
+   1. Note the Application ID for the `App Service` application shown in the error message above (highlighted in the image). This will be used as the `ConnectorHostAppAppId` parameter in the script below. This is the Entra ID app registration for the connector host, and is used to allow the connector host to call your API with the required scopes.
+   1. Also note the Application ID for the Entra ID app registration created by the Bicep template for the authorized container (used in step 1 above). This is the `ApiHostAppId` parameter in the script below.
+   1. From the scripts folder in this repo, run the `ManagePermissionGrant.ps1` script as follows:
+
+   ```powershell
+   .\ManagePermissionGrant.ps1 -ConnectorHostApp 7ab7862c-4c57-491e-8a45-d52a7e023983 -ApiHostAppId 9635f9b6-0b73-4da2-841f-4d5ef45e3334
+   ```
+
+   4. Follow the prompts to add the Power Platform environment as an authorized client app in the Entra ID app registration for the authorized container. The script will also add the required API permissions for the connector host to allow it to call your API with the required scopes.
+1. Go back to the Power Automate flow and try to create the connection again. This time you should be able to sign in successfully and the connection should be created.
+1. Finally, add the HTTP pamarameters to the action. The parameters are as follows:
+    * **Method**: `GET`
+    * **URI**: The FQDN for the authenticated container app, followed by `\api\environment`, e.g. `https://pp-vnet-ca-auth..<generated_name>.<region>.azurecontainerapps.io.azurecontainerapps.io/api/environment` 
+1. Run the flow and check the output of the action. You should see a successful response from the API
+
 
 
 
