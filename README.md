@@ -203,6 +203,13 @@ Follow the steps below to set up the HTTP with Microsoft Entra ID (preauthorized
     * **URI**: The FQDN for the authenticated container app, followed by `\api\environment`, e.g. `https://pp-vnet-ca-auth..<generated_name>.<region>.azurecontainerapps.io.azurecontainerapps.io/api/environment` 
 1. Run the flow and check the output of the action. You should see a successful response from the API
 
+## Wrap Up
+
+If you have run all the steps in this demo you should have a working Power Platform environment with Azure VNet integration, and you should have a working Power Platform flow that looks something like this:
+  
+![Power Automate flow](docs/images/flow.png)
+
+You can drill into the results of each action but the fact that each has succeeded is a good indication that the connection to the Azure VNet is working.
 
 
 
