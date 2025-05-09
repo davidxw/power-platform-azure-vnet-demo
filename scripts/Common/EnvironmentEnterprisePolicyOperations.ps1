@@ -10,51 +10,57 @@ function Login($endpoint) {
 
     # Login - only needs to be run once per session
     if ($null -eq $global:currentSession.userId) {
+        Write-Host 1
         $logIn = $true
     }
 
-    if (($null -eq $global:currentSession.expiresOn) -or (get-date $global:currentSession.expiresOn) -lt (Get-Date)) {
+    # if (($null -eq $global:currentSession.expiresOn) -or (get-date $global:currentSession.expiresOn) -lt (Get-Date)) {
+    #     $logIn = $true
+    # }
+
+    if ("True" -ne $global:currentSession.loggedIn) {
+        Write-Host 2
         $logIn = $true
     }
 
     $envSearch = $env + "*"
 
     if ($global:currentSession.bapEndpoint -notlike $envSearch) {
+        Write-Host 3
         $logIn = $true
     }
 
     if ($logIn) {
         $result = Add-PowerAppsAccount -Endpoint $endpoint
         echo $result
-    }
 
-    $connect = Connect-AzAccount
+        $connect = Connect-AzAccount
 
-    if ($null -eq $connect)
-    {
-        Write-Host "Error connecting to Azure Account `n" -ForegroundColor Red
-        return $false
+        if ($null -eq $connect) {
+            Write-Host "Error connecting to Azure Account `n" -ForegroundColor Red
+            return $false
+        }
     }
+    
     return $true
 }
 
-function LinkPolicyToEnv 
-{
+function LinkPolicyToEnv {
     param(
-        [Parameter(Mandatory=$true)]
-        [ValidateSet("cmk","vnet")]
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("cmk", "vnet")]
         [ValidateNotNullOrEmpty()]
         [String]$policyType,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [String]$environmentId,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [String]$policyArmId,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [ValidateSet("tip1", "tip2", "prod")]
         [String]$endpoint
 
@@ -66,8 +72,7 @@ function LinkPolicyToEnv
 
     Write-Host "Logging In..." -ForegroundColor Green
     $connect = Login $endpoint
-    if ($false -eq $connect)
-    {
+    if ($false -eq $connect) {
         return
     }
 
@@ -76,16 +81,14 @@ function LinkPolicyToEnv
     #Validate Environment
     $env = GetEnvironment $environmentId
 
-    if ($env -eq $null) 
-    {
+    if ($env -eq $null) {
         return
     }
     Write-Host "Environment reterieved `n" -ForegroundColor Green
 
     #Validate Enterprise Policy
     $policySystemId = GetEnterprisePolicySystemId $policyArmId
-    if ($null -eq $policySystemId)
-    {
+    if ($null -eq $policySystemId) {
         return
     }
     Write-Host "Enterprise Policy reterieved `n" -ForegroundColor Green
@@ -95,8 +98,7 @@ function LinkPolicyToEnv
 
     $linkResultString = $linkResult | ConvertTo-Json
 
-    if ($null -eq $linkResult -or $linkResult.StatusCode -ne "202")
-    {
+    if ($null -eq $linkResult -or $linkResult.StatusCode -ne "202") {
         Write-Host "Linking of $policyType policy did not start for environement $environmentId"
         Write-Host "Error: $linkResultString"
         return 
@@ -108,8 +110,7 @@ function LinkPolicyToEnv
     Write-Host "Do you want to poll the linking operation (y/n)"
     $poll = Read-Host
 
-    if ("n" -eq $poll)
-    {
+    if ("n" -eq $poll) {
         return
     }
 
@@ -124,23 +125,22 @@ function LinkPolicyToEnv
     PollLinkUnlinkOperation $operationLocation $retryAfter
 }
 
-function UnLinkPolicyFromEnv 
-{
+function UnLinkPolicyFromEnv {
     param(
-        [Parameter(Mandatory=$true)]
-        [ValidateSet("cmk","vnet")]
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("cmk", "vnet")]
         [ValidateNotNullOrEmpty()]
         [String]$policyType,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [String]$environmentId,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [String]$policyArmId,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [ValidateSet("tip1", "tip2", "prod")]
         [String]$endpoint
 
@@ -152,8 +152,7 @@ function UnLinkPolicyFromEnv
 
     Write-Host "Logging In..." -ForegroundColor Green
     $connect = Login $endpoint
-    if ($false -eq $connect)
-    {
+    if ($false -eq $connect) {
         return
     }
 
@@ -162,26 +161,22 @@ function UnLinkPolicyFromEnv
     #Validate Environment
     $env = GetEnvironment $environmentId
 
-    if ($env -eq $null) 
-    {
+    if ($env -eq $null) {
         return
     }
     Write-Host "Environment reterieved `n" -ForegroundColor Green
 
-    $epPropertyName = switch ( $policyType )
-    {
+    $epPropertyName = switch ( $policyType ) {
         "cmk" { "CustomerManagedKeys" }
         "vnet" { "VNets" }
     }
     
-    if ($null -eq $env.properties.enterprisePolicies -or $null -eq $env.properties.enterprisePolicies.$epPropertyName)
-    {
+    if ($null -eq $env.properties.enterprisePolicies -or $null -eq $env.properties.enterprisePolicies.$epPropertyName) {
         Write-Host "No enterprise policy present to remove for environement $environmentId"
         return
     }
 
-    if (!$policyArmId.Equals($env.properties.enterprisePolicies.$epPropertyName.id))
-    {
+    if (!$policyArmId.Equals($env.properties.enterprisePolicies.$epPropertyName.id)) {
         Write-Host "Given policyArmId $policyArmId not matching with $policyType policy ArmId for environement $environmentId"
         return 
     }
@@ -189,8 +184,7 @@ function UnLinkPolicyFromEnv
 
     #Validate Enterprise Policy
     $policySystemId = GetEnterprisePolicySystemId $policyArmId
-    if ($null -eq $policySystemId)
-    {
+    if ($null -eq $policySystemId) {
         return
     }
     Write-Host "Enterprise Policy reterieved `n" -ForegroundColor Green
@@ -200,8 +194,7 @@ function UnLinkPolicyFromEnv
 
     $unLinkResultString = $UnLinkResult | ConvertTo-Json
 
-    if ($null -eq $unLinkResult -or $unLinkResult.StatusCode -ne "202")
-    {
+    if ($null -eq $unLinkResult -or $unLinkResult.StatusCode -ne "202") {
         Write-Host "Unlinking of $policyType policy did not start for environement $environmentId"
         Write-Host "Error: $unLinkResultString"
         return 
@@ -213,8 +206,7 @@ function UnLinkPolicyFromEnv
     Write-Host "Do you want to poll the unlink operation (y/n)"
     $poll = Read-Host
 
-    if ("n" -eq $poll)
-    {
+    if ("n" -eq $poll) {
         return
     }
 
@@ -227,23 +219,22 @@ function UnLinkPolicyFromEnv
     
 }
 
-function SwapPolicyForEnv 
-{
+function SwapPolicyForEnv {
     param(
-        [Parameter(Mandatory=$true)]
-        [ValidateSet("cmk","vnet")]
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("cmk", "vnet")]
         [ValidateNotNullOrEmpty()]
         [String]$policyType,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [String]$environmentId,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [String]$policyArmId,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [ValidateSet("tip1", "tip2", "prod")]
         [String]$endpoint
 
@@ -255,8 +246,7 @@ function SwapPolicyForEnv
 
     Write-Host "Logging In..." -ForegroundColor Green
     $connect = Login $endpoint
-    if ($false -eq $connect)
-    {
+    if ($false -eq $connect) {
         return
     }
 
@@ -265,28 +255,24 @@ function SwapPolicyForEnv
     #Validate Environment
     $env = GetEnvironment $environmentId
 
-    if ($env -eq $null) 
-    {
+    if ($env -eq $null) {
         return
     }
     Write-Host "Environment reterieved `n" -ForegroundColor Green
 
-    $epPropertyName = switch ( $policyType )
-    {
+    $epPropertyName = switch ( $policyType ) {
         "cmk" { "CustomerManagedKeys" }
         "vnet" { "VNets" }
     }
     
-    if ($null -eq $env.properties.enterprisePolicies -or $null -eq $env.properties.enterprisePolicies.$epPropertyName)
-    {
+    if ($null -eq $env.properties.enterprisePolicies -or $null -eq $env.properties.enterprisePolicies.$epPropertyName) {
         Write-Host "No enterprise policy of $policyType present to swap for environement $environmentId"
         return
     }
 
     #Validate Enterprise Policy
     $policySystemId = GetEnterprisePolicySystemId $policyArmId
-    if ($null -eq $policySystemId)
-    {
+    if ($null -eq $policySystemId) {
         return
     }
     Write-Host "Enterprise Policy reterieved `n" -ForegroundColor Green
@@ -296,8 +282,7 @@ function SwapPolicyForEnv
 
     $swapResultString = $swapResult | ConvertTo-Json
 
-    if ($null -eq $swapResult -or $swapResult.StatusCode -ne "202")
-    {
+    if ($null -eq $swapResult -or $swapResult.StatusCode -ne "202") {
         Write-Host "Swapping of $policyType policy did not start for environement $environmentId"
         Write-Host "Error: $swapResultString"
         return 
@@ -309,8 +294,7 @@ function SwapPolicyForEnv
     Write-Host "Do you want to poll the swapping operation (y/n)"
     $poll = Read-Host
 
-    if ("n" -eq $poll)
-    {
+    if ("n" -eq $poll) {
         return
     }
 
@@ -324,19 +308,18 @@ function SwapPolicyForEnv
 }
 
 
-function GetEnterprisePolicyForEnvironment 
-{
+function GetEnterprisePolicyForEnvironment {
     param(
-        [Parameter(Mandatory=$true)]
-        [ValidateSet("cmk","vnet")]
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("cmk", "vnet")]
         [ValidateNotNullOrEmpty()]
         [String]$policyType,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [String]$environmentId,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [ValidateSet("tip1", "tip2", "prod")]
         [String]$endpoint
 
@@ -348,8 +331,7 @@ function GetEnterprisePolicyForEnvironment
 
     Write-Host "Logging In..." -ForegroundColor Green
     $connect = Login $endpoint
-    if ($false -eq $connect)
-    {
+    if ($false -eq $connect) {
         return
     }
 
@@ -358,20 +340,17 @@ function GetEnterprisePolicyForEnvironment
     #Validate Environment
     $env = GetEnvironment $environmentId
 
-    if ($env -eq $null) 
-    {
+    if ($env -eq $null) {
         return
     }
     Write-Host "Environment reterieved `n" -ForegroundColor Green
 
-    $epPropertyName = switch ( $policyType )
-    {
+    $epPropertyName = switch ( $policyType ) {
         "cmk" { "CustomerManagedKeys" }
         "vnet" { "VNets" }
     }
     
-    if ($null -eq $env.properties.enterprisePolicies -or $null -eq $env.properties.enterprisePolicies.$epPropertyName)
-    {
+    if ($null -eq $env.properties.enterprisePolicies -or $null -eq $env.properties.enterprisePolicies.$epPropertyName) {
         Write-Host "No enterprise policy present of $policyType in environement $environmentId"
         return
     }
@@ -381,19 +360,18 @@ function GetEnterprisePolicyForEnvironment
     Write-Host "Enterprise Policy Arm Id $policyArmId"
 }
 
-function LinkPolicyToPlatformAppsData 
-{
+function LinkPolicyToPlatformAppsData {
     param(
-        [Parameter(Mandatory=$true)]
-        [ValidateSet("cmk","vnet", "identity")]
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("cmk", "vnet", "identity")]
         [ValidateNotNullOrEmpty()]
         [String]$policyType,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [String]$policyArmId,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [ValidateSet("tip1", "tip2", "prod")]
         [String]$endpoint
 
@@ -405,18 +383,16 @@ function LinkPolicyToPlatformAppsData
 
     Write-Host "Logging In..." -ForegroundColor Green
     $connect = Login $endpoint
-    if ($false -eq $connect)
-    {
+    if ($false -eq $connect) {
         return
     }
 
     Write-Host "Logged In..." -ForegroundColor Green
 
-     #Validate PlatformApps enrollment
+    #Validate PlatformApps enrollment
     $platformAppsStatus = GetPlatformApps
 
-    if ($platformAppsStatus -eq $null -or $platformAppsStatus.enrollmentState -ne "Enrolled") 
-    {
+    if ($platformAppsStatus -eq $null -or $platformAppsStatus.enrollmentState -ne "Enrolled") {
         Write-Host "PlatformApps not enrolled"
         return
     }
@@ -424,8 +400,7 @@ function LinkPolicyToPlatformAppsData
 
     #Validate Enterprise Policy
     $policySystemId = GetEnterprisePolicySystemId $policyArmId
-    if ($null -eq $policySystemId)
-    {
+    if ($null -eq $policySystemId) {
         return
     }
     Write-Host "Enterprise Policy reterieved `n" -ForegroundColor Green
@@ -435,8 +410,7 @@ function LinkPolicyToPlatformAppsData
 
     $linkResultString = $linkResult | ConvertTo-Json
 
-    if ($null -eq $linkResult -or $linkResult.StatusCode -ne "202")
-    {
+    if ($null -eq $linkResult -or $linkResult.StatusCode -ne "202") {
         Write-Host "Linking of $policyType policy did not start for platformapps"
         Write-Host "Error: $linkResultString"
         return 
@@ -446,19 +420,18 @@ function LinkPolicyToPlatformAppsData
 }
 
 
-function UnLinkPolicyFromPlatformAppsData 
-{
+function UnLinkPolicyFromPlatformAppsData {
     param(
-        [Parameter(Mandatory=$true)]
-        [ValidateSet("cmk","vnet", "identity")]
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("cmk", "vnet", "identity")]
         [ValidateNotNullOrEmpty()]
         [String]$policyType,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [String]$policyArmId,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [ValidateSet("tip1", "tip2", "prod")]
         [String]$endpoint
 
@@ -470,46 +443,40 @@ function UnLinkPolicyFromPlatformAppsData
 
     Write-Host "Logging In..." -ForegroundColor Green
     $connect = Login $endpoint
-    if ($false -eq $connect)
-    {
+    if ($false -eq $connect) {
         return
     }
 
     Write-Host "Logged In..." -ForegroundColor Green
 
-    $epPropertyName = switch ( $policyType )
-    {
+    $epPropertyName = switch ( $policyType ) {
         "cmk" { "CustomerManagedKeys" }
         "vnet" { "VNets" }
         "identity" { "Identity" }
     }
 
-     #Validate PlatformApps enrollment
+    #Validate PlatformApps enrollment
     $platformAppsStatus = GetPlatformApps
 
-    if ($platformAppsStatus -eq $null -or $platformAppsStatus.enrollmentState -ne "Enrolled") 
-    {
+    if ($platformAppsStatus -eq $null -or $platformAppsStatus.enrollmentState -ne "Enrolled") {
         Write-Host "PlatformApps not enrolled"
         return
     }
     Write-Host "PlatformApps enrolled `n" -ForegroundColor Green
   
-    if ($null -eq $platformAppsStatus.enterprisePolicies -or $null -eq $platformAppsStatus.enterprisePolicies.$epPropertyName)
-    {
+    if ($null -eq $platformAppsStatus.enterprisePolicies -or $null -eq $platformAppsStatus.enterprisePolicies.$epPropertyName) {
         Write-Host "No enterprise policy present of type $policyType to remove from PlatformApps"
         return
     }
 
-    if (!$policyArmId.Equals($platformAppsStatus.enterprisePolicies.$epPropertyName.id))
-    {
+    if (!$policyArmId.Equals($platformAppsStatus.enterprisePolicies.$epPropertyName.id)) {
         Write-Host "Given policyArmId $policyArmId not matching with $policyType policy ArmId for Platformapps"
         return 
     }
     
     #Validate Enterprise Policy
     $policySystemId = GetEnterprisePolicySystemId $policyArmId
-    if ($null -eq $policySystemId)
-    {
+    if ($null -eq $policySystemId) {
         return
     }
     Write-Host "Enterprise Policy reterieved `n" -ForegroundColor Green
@@ -519,8 +486,7 @@ function UnLinkPolicyFromPlatformAppsData
 
     $unLinkResultString = $UnLinkResult | ConvertTo-Json
 
-    if ($null -eq $unLinkResult -or $unLinkResult.StatusCode -ne "202")
-    {
+    if ($null -eq $unLinkResult -or $unLinkResult.StatusCode -ne "202") {
         Write-Host "Unlinking of $policyType policy did not start for platformapps"
         Write-Host "Error: $unLinkResultString"
         return 

@@ -100,6 +100,8 @@ function PollLinkUnlinkOperation ($operationLink, $pollInterval)
 {
 
     $run = $true
+    $pollIntervalDouble = [double]::Parse($pollInterval)
+
     while ($run)
     {
         $pollResult = InvokeApi -Method GET -Route "$operationLink"
@@ -118,8 +120,8 @@ function PollLinkUnlinkOperation ($operationLink, $pollInterval)
         }
         elseif ($operationState.Equals("Running") -or $operationState.Equals("NotStarted"))
         {
-            echo "Operation still running. Poll after $pollInterval seconds"
-            start-sleep -seconds $pollInterval
+            echo "Operation still running. Poll after $pollIntervalDouble seconds"
+            start-sleep -seconds $pollIntervalDouble
 
         }
         else
