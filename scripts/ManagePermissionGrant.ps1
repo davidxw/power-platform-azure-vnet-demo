@@ -65,15 +65,25 @@ $ConnectorHostAppServicePrincipal | Format-Table -wrap -auto
 $apiHostSP = Get-MgServicePrincipal -Filter "appId eq '$ApiHostAppId'"
 
 If (!$apiHostSP) {
-	Write-Warning "No service principal found in the current tenant with appId: $ApiHostAppId"
-	Exit
+	Write-Warning "No service principal was found in the current tenant with appId: $ApiHostAppId. Attempting to create one."
+	
+	$AppIDForSpCreation = @{
+		"AppId" = "$ApiHostAppId"
+	}
+
+	$apiHostSP = New-MgServicePrincipal -BodyParameter $AppIDForSpCreation
+
+	If (!$apiHostSP) {
+		Write-Warning "Not able to create a service principal for appId : $ApiHostAppId."
+		Exit
+	}
 }
 
 $apiHostSPId = $apiHostSP.Id
 
 # get scopes for the selected app
 $scopes = $apiHostSP.Oauth2PermissionScopes
-$joinedScopes = $scopes | Join-String -Property {$_.Value} -Separator ' '
+$joinedScopes = $scopes | Join-String -Property { $_.Value } -Separator ' '
 
 
 # if you want to update the consent type to a spcific user, change this variable to "Principal"
@@ -172,8 +182,8 @@ $aad_application.Api.preAuthorizedApplications = $aad_application.Api.preAuthori
 
 # Update the application with the pre-authorized application, all scopes are added by default
 $aad_application.Api.preAuthorizedApplications += @{
-	AppId          = $ConnectorHostAppAppId
-	DelegatedPermissionIds = $scopes | ForEach-Object {$_.Id}
+	AppId                  = $ConnectorHostAppAppId
+	DelegatedPermissionIds = $scopes | ForEach-Object { $_.Id }
 }
 
 Update-MgApplicationByAppId -AppId $ApiHostAppId -Api $aad_application.Api
@@ -182,3 +192,5 @@ Write-Host "The application with appId $ApiHostAppId has been updated with the p
 
 Disconnect-MgGraph
 Write-Host "Script execution completed successfully"
+
+

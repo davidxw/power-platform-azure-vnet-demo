@@ -72,6 +72,7 @@ The Bicep template writes a number of values to the outputs collection - these v
 * `policyArmId` - the resource ID of the `NetworkInjection` Enterprise Policy. This is required to connect the Power Platform environment to the Azure VNet.
 * `containerAppNoauthFQDN` - the FQDN of the unprotected Container App. This is required to set up a custom connector to call the API.
 * `containerAppauthFQDN` - the FQDN of the protected Container App. This is required to set up the HTTP with Microsoft Entra ID (preauthorized) connector to call the API.
+* `containerAppAuthAppId` - the the Entra ID app registration ID for the protected Container App. This is required to set up the HTTP with Microsoft Entra ID (preauthorized) connector to call the API.
 * `blobServiceEndpoint` - the blob service endpoint of the storage account. This is required to set up a Blob Storage connector
 
 ### 3. Connect your Power Platform environment to the Azure VNet using PowerShell
@@ -166,15 +167,15 @@ This will create a custom connector in your Power Platform environment called `A
 
 #### Use the HTTP with Microsoft Entra ID (preauthorized)  
 
-The final sample in this repo is a demo of the HTTP with Microsoft Entra ID (preauthorized) connector. This connector allows you to call your custom APIs that are protected with Entra ID authentication, and, like most use cases with Entra ID, there are quite a few moving parts. For this particular demo we'll be attempting to call an API that has been deployed into an Azure Container App, which has been protected with Entra ID authentication. The protected container app deplopyed by the Bicep template in this repo is called `pp-vnet-ca-auth`.
+The final sample in this repo is a demo of the HTTP with Microsoft Entra ID (preauthorized) connector. This connector allows you to call your custom APIs that are protected with Entra ID authentication, and, like most use cases with Entra ID, there are quite a few moving parts. For this particular demo we'll be attempting to call an API that has been deployed into an Azure Container App, which has been protected with Entra ID authentication. The protected container app deplopyed by the Bicep template in this repo is called `<your app name>-ca-auth`.
 
 Follow the steps below to set up the HTTP with Microsoft Entra ID (preauthorized) connector:
 
 1. Add an `Invoke an HTTP request` action from the `HTTP with Microsoft Entra ID (preauthorized)` connector to your flow, and when prompted for the connection details enter the following values:
    * **Connection Name**: A name for the connection (e.g. `HTTP with Entra ID`)
    * **Authentication Type**: `Login with Microsoft Entra ID`
-   * **Microsoft Entra ID Resource URI**: The Application ID URI of the Entra authentication app registration created by the Bicep template for the authorized container. To get this value navigate to the Security -> Authentication tab of the `pp-vnet-ca-auth` container app in the Azure portal, and copy the value of the `App (client) ID` field. Enter this value as `api://<id>` (e.g. `api://d22caf39-23f6-4e9d-8a86-990fd406bdfe`).
-   * **Base Resource URL**: The FQDN of the `pp-vnet-ca-noauth` container app deployed by the Bicep template. This is the value of the `containerAppauthFQDN` output from the Bicep template. The FQDN will look something like this: `pp-vnet-ca-auth.<generated_name>.<region>.azurecontainerapps.io` 
+   * **Microsoft Entra ID Resource URI**: The Application ID URI of the Entra authentication app registration created by the Bicep template for the authorized container. To get the application ID you can look for the `containerAppAuthAppId` output value from the bicep template, or navigate to the Security -> Authentication tab of the `pp-vnet-ca-auth` container app in the Azure portal, and copy the value of the `App (client) ID` field. Enter this value as `api://<id>` (e.g. `api://d22caf39-23f6-4e9d-8a86-990fd406bdfe`).
+   * **Base Resource URL**: The FQDN of the `<your app anme>-ca-noauth` container app deployed by the Bicep template. This is the value of the `containerAppauthFQDN` output from the Bicep template. The FQDN will look something like this: `<your app anme>-ca-auth.<generated_name>.<region>.azurecontainerapps.io` 
 
      The properties of the action should look something like this:
 
@@ -202,6 +203,11 @@ Follow the steps below to set up the HTTP with Microsoft Entra ID (preauthorized
     * **Method**: `GET`
     * **URI**: The FQDN for the authenticated container app, followed by `\api\environment`, e.g. `https://pp-vnet-ca-auth..<generated_name>.<region>.azurecontainerapps.io.azurecontainerapps.io/api/environment` 
 1. Run the flow and check the output of the action. You should see a successful response from the API
+
+> [!NOTE]
+> If you receive a 403 error in the `Invoke an HTTP request` action when running the flow, open the authenticated container app in the portal and navigate the the "Settings" -> "Authentication" page.   Edit the Microsoft identity provider and if the "Additional checks" -> "Client application requirement" setting is set to "Allow requests from specific client applications", add the Application ID of the connector host app (the value of the `ConnectorHostAppAppId` parameter in the script above) to the list of allowed client applications. This setting is required to allow the connector host to call your API. 
+>
+> You can alternatively set this to "Allow requests from any client application" but we have found that this setting is not saved correctly
 
 ## Wrap Up
 

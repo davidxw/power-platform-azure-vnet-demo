@@ -19,6 +19,11 @@ param containerImage string = 'davidxw/webtest:latest'
 var containerAppSubnetName = 'containerapp-subnet'
 var privateEndpointSubnetAddressRange = '10.0.2.0/24'
 
+var containerApp_noauth_name = '${containerAppName}-noauth'
+var containerApp_auth_name = '${containerAppName}-auth'
+
+var appSecretSettingName = 'microsoft-provider-authentication-secret'
+
 resource primaryVnet 'Microsoft.Network/virtualNetworks@2021-05-01' existing = {
   name: primaryVnetName
 }
@@ -70,63 +75,64 @@ resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' 
   }
 }
 
+var container_template = {
+  containers: [
+    {
+      name: containerAppName
+      image: containerImage
+      resources: {
+        cpu: 1
+        memory: '2Gi'
+      }
+    }
+  ]
+}
+
+var container_ingress ={
+  external: true
+  targetPort: 8080
+}
+
 resource containerApp_noauth 'Microsoft.App/containerApps@2023-05-01' = {
-  name: '${containerAppName}-noauth'
+  name: containerApp_noauth_name
   location: location
   properties: {
     managedEnvironmentId: containerAppEnvironment.id
     workloadProfileName: 'Consumption'
     configuration: {
-      ingress: {
-        external: true
-        targetPort: 8080
-      }
+      ingress: container_ingress
     }
-    template: {
-      containers: [
-        {
-          name: containerAppName
-          image: containerImage
-          resources: {
-            cpu: 1
-            memory: '2Gi'
-          }
-        }
-      ]
-    }
-  }
-  identity: {
-    type: 'SystemAssigned'
+    template: container_template
   }
 }
 
 resource containerApp_auth 'Microsoft.App/containerApps@2023-05-01' = {
-  name: '${containerAppName}-auth'
+  name: containerApp_auth_name
   location: location
   properties: {
     managedEnvironmentId: containerAppEnvironment.id
     workloadProfileName: 'Consumption'
     configuration: {
-      ingress: {
-        external: true
-        targetPort: 8080
-      }
-    }
-    template: {
-      containers: [
+      ingress: container_ingress
+      secrets: [
         {
-          name: containerAppName
-          image: containerImage
-          resources: {
-            cpu: 1
-            memory: '2Gi'
-          }
+          name: appSecretSettingName
+          value: entra_app.outputs.app_client_secret
         }
       ]
     }
+    template: container_template
   }
-  identity: {
-    type: 'SystemAssigned'
+}
+
+var containerApp_auth_fqdn = '${containerApp_auth_name}.${containerAppEnvironment.properties.defaultDomain}'
+
+// Create an Entra application for the container app authentication
+module entra_app 'entra_application.bicep' = {
+  name: 'entra_app'
+  params: {
+    service_name: containerApp_auth_name
+    service_fqdn: containerApp_auth_fqdn
   }
 }
 
@@ -134,10 +140,34 @@ resource containerApp_auth_config 'Microsoft.App/containerApps/authConfigs@2025-
   parent: containerApp_auth
   name: 'current'
   properties: {
+    platform: {
+      enabled: true
+    }
+    globalValidation: {
+      unauthenticatedClientAction: 'Return401'
+      redirectToProvider: 'azureactivedirectory'
+    }
     identityProviders: {
       azureActiveDirectory: {
         enabled: true
         isAutoProvisioned: true
+        registration: {
+          openIdIssuer: 'https://sts.windows.net/${subscription().tenantId}/v2.0'
+          clientId: entra_app.outputs.appId
+          clientSecretSettingName: appSecretSettingName
+        }
+        login: {
+          disableWWWAuthenticate: false
+        }
+        validation: {
+          jwtClaimChecks: {}
+          allowedAudiences: [
+              'api://${containerApp_auth_fqdn}'
+          ]
+          defaultAuthorizationPolicy: {
+            allowedPrincipals: {}
+          }
+        }
       }
     }
   }
@@ -157,6 +187,7 @@ module privateDnsZoneModule 'privatedns.bicep' = {
 
 output containerNoauthAppFQDN string = containerApp_noauth.properties.configuration.ingress.fqdn
 output containerAppAuthFQDN string = containerApp_auth.properties.configuration.ingress.fqdn
+output containerAppAuthAppId string = entra_app.outputs.appId
 
 
 
