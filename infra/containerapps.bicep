@@ -16,6 +16,9 @@ param containerAppName string = '${baseName}-ca'
 @description('The image to use for the container app.')
 param containerImage string = 'davidxw/webtest:latest'
 
+
+param connectorAppClientId string = '7ab7862c-4c57-491e-8a45-d52a7e023983'
+
 var containerAppSubnetName = 'containerapp-subnet'
 var privateEndpointSubnetAddressRange = '10.0.2.0/24'
 
@@ -165,6 +168,9 @@ resource containerApp_auth_config 'Microsoft.App/containerApps/authConfigs@2025-
               'api://${containerApp_auth_fqdn}'
           ]
           defaultAuthorizationPolicy: {
+            allowedApplications: [
+              connectorAppClientId
+            ]
             allowedPrincipals: {}
           }
         }

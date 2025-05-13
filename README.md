@@ -205,7 +205,7 @@ Follow the steps below to set up the HTTP with Microsoft Entra ID (preauthorized
 1. Run the flow and check the output of the action. You should see a successful response from the API
 
 > [!NOTE]
-> If you receive a 403 error in the `Invoke an HTTP request` action when running the flow, open the authenticated container app in the portal and navigate the the "Settings" -> "Authentication" page.   Edit the Microsoft identity provider and if the "Additional checks" -> "Client application requirement" setting is set to "Allow requests from specific client applications", add the Application ID of the connector host app (the value of the `ConnectorHostAppAppId` parameter in the script above) to the list of allowed client applications. This setting is required to allow the connector host to call your API. 
+> If you receive a 403 error in the `Invoke an HTTP request` action when running the flow, open the authenticated container app in the portal and navigate the the "Settings" -> "Authentication" page.  Edit the Microsoft identity provider and check if the "Additional checks" -> "Allowed client applications" list contains the Application ID of the connector host app (the value of the `ConnectorHostAppAppId` parameter in the script above). If not add the Application ID to the list and save the changes. This is required to allow the connector host to call your API with the required scopes.
 >
 > You can alternatively set this to "Allow requests from any client application" but we have found that this setting is not saved correctly
 

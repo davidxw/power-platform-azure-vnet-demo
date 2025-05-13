@@ -52,9 +52,6 @@ resource application 'Microsoft.Graph/applications@v1.0' = {
   ]
 }
 
-resource sp 'Microsoft.Graph/servicePrincipals@v1.0' = {
-  appId: application.appId
-}
 
 output appId string = application.appId
 
