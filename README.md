@@ -60,13 +60,14 @@ az deployment group create --resource-group $rg --template-file ./main.bicep --p
 This script will create the following resources in your Azure subscription:
 
 ![Azure diagram](docs/images/azure.drawio.svg)
+#### Core Resources (Required for Power Platform Azure VNet integration):
 * Two Azure VNets, one in each of the regions associated with your Power Platform environment. The default regions are `eastus` and `westus` for Power Plaform envrionments in the United States.  If your Power Plaform environment is in a different region see the [supported region list](https://learn.microsoft.com/en-in/power-platform/admin/vnet-support-overview#supported-regions) and update the `pimaryLocation` and `secondaryLocation` parameters in the Bicep template appropriately. The created VNets are peered. If your Power Platform environment is in a region with a single Azure region (e.g. Sweden or Singapore) you only need a single VNet. Update the `secondaryLocation` parameter to `''` (either in the template or passed as a paramater) and the template will only create the primary VNet.
 * A subnet in each VNet delegated to Power Platform. The subnets are named `powerplatform` and are delegated to `Microsoft.PowerPlatform/enterprisePolicies`
 * A `NetworkInjection` Enterprise Policy - this policy is required to connect the Power Platform environment to the Azure VNets. Note that actual connection is performed in a later step.
+#### Test Resources (required for the "Samples for Testing the Virtual Network Connection" section below):
+If you only want to set up the Azure resources required for Power Platform Azure VNet integration, you can set the `createTestResources` parameter to `false` when running the Bicep template - the resources below will not be created. The default value for this parameter is `true` so without modification the Bicep template will create the following resources:
 * An Azure Storage account in the primary region, with a private endpoint in the primary VNet. The storage account is configured with a private DNS zone, and public access is disabled. A single blob container named `files` is added to the storage account.
 * Two Azure Container Apps in a Container Apps environment in the primary region. The Container Apps Environment is deployed into the primary Vnet with external ingress allowed from the VNet only. Each container app hosts a simple API that responds to a `/api/ping` request, and one of the container apps is protected with Entra ID authentication. 
-
-The Storage account and Container Apps are deployed using separate Bicep modules - if you don't need these resources you can comment them out in the main Bicep template.
 
 The Bicep template writes a number of values to the outputs collection - these values are required if you are also going to set up a custom conenctor to call the APIs, or if you are going to call the protected API using Entra ID authentication. The values are:
 
@@ -84,7 +85,7 @@ To connect your Power Plaform environment you will need to run the `NewSubnetInj
 * `-policyArmId` - the resource ID of the `NetworkInjection` Enterprise Policy created be the Bicep templates in the previous step. This can be found by looking for the value of the `policyArmId` output from the Bicep template, or by looking in the Azure portal for the `NetworkInjection` policy in your resource group. The resource ID will look something like this: `/subscriptions/<subscriptionId>/resourceGroups/<rgName>/providers/Microsoft.PowerPlatform/enterprisePolicies/<policyName>`
 
 ``` powershell
- .\CallNewSubnetInjection.ps1  -environmentId "Default-cf7a4a08-6d30-40c8-bd52-d6f7494c0541" -policyArmId "/subscriptions/68dfa90d-6200-4bc6-bdad-178344084a61/resourceGroups/pp-vnet/providers/Microsoft.PowerPlatform/enterprisePolicies/pp-vnet-policy"
+ .\NewSubnetInjection.ps1  -environmentId "Default-cf7a4a08-6d30-40c8-bd52-d6f7494c0541" -policyArmId "/subscriptions/68dfa90d-6200-4bc6-bdad-178344084a61/resourceGroups/pp-vnet/providers/Microsoft.PowerPlatform/enterprisePolicies/pp-vnet-policy"
 ```
 
 To check if the environment was successfully connected to the Azure VNet you need to check the Power Platform admin center. Navigate to `Manage > Environments > <your environment>`, and check the recent operations list - you should see an operation of type `New Network Injection Policy` with a status of `Succeeded`. 

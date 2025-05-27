@@ -43,7 +43,6 @@ param containerAppSubnetAddressRange string = '10.0.2.0/24'
 @description('Set to true if you want to create test resources such as a blob storage account and container apps. These are not required for the Power Platform VNet integration, but are useful for testing custom connectors and the Entra ID connector.')
 param createTestResources bool = true
 
-
 var isSecondaryLocation = secondaryLocation != ''
 
 var primaryVnetName = '${baseName}-${primaryLocation}-vnet'
