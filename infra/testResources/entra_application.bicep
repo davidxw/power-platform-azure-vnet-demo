@@ -7,11 +7,13 @@ param secretName string = 'auth-secret'
 
 param app_name string = '${service_name}-app-${newGuid()}'
 
+var identifierUri = 'api://${app_name}'
+
 resource application 'Microsoft.Graph/applications@v1.0' = {
   displayName: app_name
   uniqueName: app_name
   identifierUris: [
-    'api://${service_fqdn}'
+    identifierUri
   ]
   web:{
     redirectUris: [
@@ -59,3 +61,4 @@ output appId string = application.appId
 
 @secure()
 output app_client_secret string = application.passwordCredentials[0].secretText
+output identifierUri string = identifierUri

@@ -144,7 +144,7 @@ resource containerApp_auth_config 'Microsoft.App/containerApps/authConfigs@2025-
         validation: {
           jwtClaimChecks: {}
           allowedAudiences: [
-              'api://${containerApp_auth_fqdn}'
+              entra_app.outputs.identifierUri
           ]
           defaultAuthorizationPolicy: {
             allowedApplications: [
