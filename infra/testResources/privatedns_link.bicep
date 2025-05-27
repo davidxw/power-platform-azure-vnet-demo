@@ -8,9 +8,8 @@ resource vnet 'Microsoft.Network/virtualNetworks@2021-05-01' existing = {
   name: vNetName
 }
 
-resource privateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' = {
+resource privateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' existing =  {
   name: privateDnsZoneName
-  location: 'global'
 }
 
 resource privateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2024-06-01' = {

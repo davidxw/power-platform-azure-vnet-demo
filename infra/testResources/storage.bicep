@@ -10,28 +10,12 @@ param location string = 'eastus'
 param primaryVnetName string = 'pp-vnet'
 param secondaryVnetName string = 'pp-vnet-secondary'
 
+param privateEndpointSubnetName string = 'private-endpoints'
+
 @description('The name of the private DNS zone for blob storage.')
 var privateDnsZoneName = 'privatelink.blob.${environment().suffixes.storage}'
 
-@description('The address range for the private endpoint subnet.')
-var privateEndpointSubnetAddressRange = '10.0.1.0/24'
-
-var privateEndpointSubnetName = 'private-endpoints'
-
 var sanitizedBaseName = replace(baseName, '-', '')
-
-resource primaryVnet 'Microsoft.Network/virtualNetworks@2021-05-01' existing = {
-  name: primaryVnetName
-}
-
-resource privateEndpointSubnet 'Microsoft.Network/virtualNetworks/subnets@2021-05-01' = {
-  parent: primaryVnet
-  name: privateEndpointSubnetName
-  properties: {
-    addressPrefix: privateEndpointSubnetAddressRange
-    privateEndpointNetworkPolicies: 'Disabled'
-  }
-}
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   name: '${sanitizedBaseName}storagexyz'
@@ -81,7 +65,7 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = {
 }
 
 module privateDnsZoneModule 'privatedns.bicep' = {
-  name: 'privateDnsZoneModule'
+  name: 'privateDnsZoneModule-storage'
   params: {
     privateDnsZoneName: privateDnsZoneName
     primaryVnetName: primaryVnetName

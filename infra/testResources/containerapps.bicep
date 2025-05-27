@@ -20,32 +20,11 @@ param containerImage string = 'davidxw/webtest:latest'
 param connectorAppClientId string = '7ab7862c-4c57-491e-8a45-d52a7e023983'
 
 var containerAppSubnetName = 'containerapp-subnet'
-var privateEndpointSubnetAddressRange = '10.0.2.0/24'
 
 var containerApp_noauth_name = '${containerAppName}-noauth'
 var containerApp_auth_name = '${containerAppName}-auth'
 
 var appSecretSettingName = 'microsoft-provider-authentication-secret'
-
-resource primaryVnet 'Microsoft.Network/virtualNetworks@2021-05-01' existing = {
-  name: primaryVnetName
-}
-
-resource containerAppSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = {
-  name: containerAppSubnetName
-  parent: primaryVnet
-  properties: {
-    addressPrefix: privateEndpointSubnetAddressRange
-    delegations: [
-      {
-        name: '0'
-        properties: {
-          serviceName: 'Microsoft.App/environments'
-        }
-      }
-    ]
-  }
-}
 
 // Log Analytics workspace
 resource wxacatestprofilesla 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -60,7 +39,7 @@ resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' 
   properties: {
     vnetConfiguration: {
       internal: true
-      infrastructureSubnetId: containerAppSubnet.id
+      infrastructureSubnetId: resourceId('Microsoft.Network/virtualNetworks/subnets', primaryVnetName, containerAppSubnetName)
     }
     appLogsConfiguration: {
       destination: 'log-analytics'
@@ -180,7 +159,7 @@ resource containerApp_auth_config 'Microsoft.App/containerApps/authConfigs@2025-
 }
 
 module privateDnsZoneModule 'privatedns.bicep' = {
-  name: 'privateDnsZoneModule'
+  name: 'privateDnsZoneModule-containerapp'
   params: {
     privateDnsZoneName: containerAppEnvironment.properties.defaultDomain
     primaryVnetName: primaryVnetName

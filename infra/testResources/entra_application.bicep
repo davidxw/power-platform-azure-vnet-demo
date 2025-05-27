@@ -3,7 +3,9 @@ extension 'br:mcr.microsoft.com/bicep/extensions/microsoftgraph/v1.0:0.2.0-previ
 param service_name string
 param service_fqdn string
 
-var app_name = '${service_name}-app'
+param secretName string = 'auth-secret'
+
+param app_name string = '${service_name}-app-${newGuid()}'
 
 resource application 'Microsoft.Graph/applications@v1.0' = {
   displayName: app_name
@@ -47,7 +49,7 @@ resource application 'Microsoft.Graph/applications@v1.0' = {
   ]
   passwordCredentials: [
     {
-      displayName: 'auth-secret'
+      displayName: secretName
     }
   ]
 }
