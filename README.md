@@ -53,6 +53,7 @@ Clone this repo to your local machine and open repo in Visual Studio Code. From 
 ``` powershell
 $rg = "<your resource group name>"
 $name = "<base name for your resources>"
+az group create --name $rg --location <your location>
 az deployment group create --resource-group $rg --template-file ./main.bicep --parameters baseName=$name
 ``` 
 

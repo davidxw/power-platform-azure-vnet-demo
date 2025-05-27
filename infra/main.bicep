@@ -1,10 +1,10 @@
 @description('The base name to be used for all resources.')
 param baseName string
 
-param geoLocation string = 'unitedstates'
+param geoLocation string = 'sweden'
 
-param primaryLocation string = 'eastus'
-param secondaryLocation string = 'westus'
+param primaryLocation string = 'swedencentral'
+param secondaryLocation string = ''
 
 param subnetName string = 'powerplatform'
 
@@ -23,118 +23,37 @@ var ppSubnetAddressRangePrimary = '10.0.0.0/24'
 @description('The address range for the "powerplatform" subnet.')
 var ppSubnetAddressRangeSecondary = '10.1.0.0/24'
 
+var isSecondaryLocation = secondaryLocation != ''
+
+var primaryVnetName = '${baseName}-${primaryLocation}-vnet'
+var secondaryVnetName = (isSecondaryLocation) ? '${baseName}-${secondaryLocation}-vnet' : ''
+
 //var resourceToken = toLower(uniqueString(subscription().id, baseName, primaryLocation))
 
-var locations = [
-  { 
+var primaryLocations = [
+  {
     location: primaryLocation
     addressSpace: vnetAddressSpacePrimary
     subnetAddressRange: ppSubnetAddressRangePrimary
   }
-  { 
+]
+
+var secondaryLocations = [
+  {
     location: secondaryLocation
     addressSpace: vnetAddressSpaceSecondary
     subnetAddressRange: ppSubnetAddressRangeSecondary
   }
 ]
 
-resource publicIPs 'Microsoft.Network/publicIPAddresses@2021-05-01' = [for location in locations: {
-  name: '${baseName}-${location.location}-pip'
-  location: location.location
-  sku: {
-    name: 'Standard'
-  }
-  properties: {
-    publicIPAllocationMethod: 'Static'
-    publicIPAddressVersion: 'IPv4'
-  }
-}]
+var locations = (isSecondaryLocation) ? union(primaryLocations, secondaryLocations) : primaryLocations
 
-resource natGateways 'Microsoft.Network/natGateways@2021-05-01' = [for location in locations: {
-  name: '${baseName}-${location.location}-nat'
-  location: location.location
-  sku: {
-    name: 'Standard'
+module vnets 'vnets.bicep' = {
+  name: 'vnets'
+  params: {
+    locationObjects: locations
+    baseName: baseName
   }
-  properties: {
-    idleTimeoutInMinutes: 4
-    publicIpAddresses: [
-      {
-        id: resourceId('Microsoft.Network/publicIPAddresses', '${baseName}-${location.location}-pip')
-      }
-    ]
-  }
-  dependsOn: [
-    publicIPs[0]
-    publicIPs[1]
-  ]
-}]
-
-resource vnets 'Microsoft.Network/virtualNetworks@2021-05-01' = [for location in locations: {
-  name: '${baseName}-${location.location}'
-  location: location.location
-  properties: {
-    addressSpace: {
-      addressPrefixes: [
-        location.addressSpace
-      ]
-    }
-    subnets: [
-      {
-        name: subnetName
-        properties: {
-          addressPrefix: location.subnetAddressRange
-          delegations: [
-            {
-              name: 'ppDelegation'
-              properties: {
-                serviceName: 'Microsoft.PowerPlatform/enterprisePolicies'
-              }
-            }
-          ]
-          natGateway: {
-            id: resourceId('Microsoft.Network/natGateways', '${baseName}-${location.location}-nat')
-          }
-        }
-      }
-    ]
-  }
-  dependsOn: [
-    natGateways[0]
-    natGateways[1]
-  ]
-}]
-
-resource primaryToSecondaryPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2022-07-01' = {
-  name: '${vnets[0].name}-To-${vnets[1].name}'
-  parent: vnets[0]
-  properties: {
-    allowForwardedTraffic: true
-    allowGatewayTransit: true
-    remoteVirtualNetwork: {
-      id: vnets[1].id
-    }
-  }
-  dependsOn: [
-    vnets[0]
-    vnets[1]
-  ]
-}
-
-resource secondaryToPrimaryPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2022-07-01' = {
-  name: '${vnets[1].name}-To-${vnets[0].name}'
-  parent: vnets[1]
-  properties: {
-    allowForwardedTraffic: true
-    allowGatewayTransit: true
-    remoteVirtualNetwork: {
-      id: vnets[0].id
-    }
-  }
-  dependsOn: [
-    vnets[0]
-    vnets[1]
-  ]
 }
 
 resource enterprisePolicy 'Microsoft.PowerPlatform/enterprisePolicies@2020-10-30-preview' = if (createPolicy) {
@@ -143,8 +62,9 @@ resource enterprisePolicy 'Microsoft.PowerPlatform/enterprisePolicies@2020-10-30
   kind: 'NetworkInjection'
   properties: {
     networkInjection: {
-      virtualNetworks: [for location in locations: {
-          id: resourceId('Microsoft.Network/virtualNetworks', '${baseName}-${location.location}')
+      virtualNetworks: [
+        for locationObject in locations: {
+          id: resourceId('Microsoft.Network/virtualNetworks', '${baseName}-${locationObject.location}')
           subnet: {
             name: subnetName
           }
@@ -153,8 +73,7 @@ resource enterprisePolicy 'Microsoft.PowerPlatform/enterprisePolicies@2020-10-30
     }
   }
   dependsOn: [
-    vnets[0]
-    vnets[1]
+    vnets
   ]
 }
 
@@ -162,13 +81,12 @@ module blob 'storage.bicep' = {
   name: 'blob'
   params: {
     baseName: baseName
-    location: vnets[0].location
-    primaryVnetName: vnets[0].name
-    secondaryVnetName: vnets[1].name
+    location: primaryLocation
+    primaryVnetName: primaryVnetName
+    secondaryVnetName: secondaryVnetName
   }
   dependsOn: [
-    vnets[0]
-    vnets[1]
+    vnets
   ]
 }
 
@@ -176,13 +94,12 @@ module containerApp 'containerapps.bicep' = {
   name: 'containerApp'
   params: {
     baseName: baseName
-    location: vnets[0].location
-    primaryVnetName: vnets[0].name
-    secondaryVnetName: vnets[1].name
+    location: primaryLocation
+    primaryVnetName: primaryVnetName
+    secondaryVnetName: secondaryVnetName
   }
   dependsOn: [
-    vnets[0]
-    vnets[1]
+    vnets
   ]
 }
 
@@ -191,4 +108,3 @@ output containerAppNoauthFQDN string = containerApp.outputs.containerNoauthAppFQ
 output containerAppauthFQDN string = containerApp.outputs.containerAppAuthFQDN
 output containerAppAuthAppId string = containerApp.outputs.containerAppAuthAppId
 output blobServiceEndpoint string = blob.outputs.blobServiceEndpoint
-
