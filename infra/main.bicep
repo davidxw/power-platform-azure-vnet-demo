@@ -2,13 +2,13 @@
 param baseName string
 
 @description('The location of your Power Platform environment.')
-param geoLocation string = 'sweden'
+param geoLocation string = 'unitedstates'
 
 @description('The primary location for the Azure resources resources. Should align with your Power Platform environment location as per this list: https://learn.microsoft.com/en-us/power-platform/admin/vnet-support-overview#supported-regions.')
-param primaryLocation string = 'swedencentral'
+param primaryLocation string = 'eastus'
 
 @description('The secondary location for the Azure resources resources. Required for Power Platform regions that support two Azure regions (as per the link above). Set to an empty string if there is only one Azure region for your Power Platform region.')
-param secondaryLocation string = ''
+param secondaryLocation string = 'westus'
 
 @description('The name of the subnet that will be delegated to your Power Platform enterprise poilicy.')
 param subnetName string = 'powerplatform'
